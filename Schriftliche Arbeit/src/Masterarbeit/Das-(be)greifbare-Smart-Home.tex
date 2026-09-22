@@ -1,0 +1,290 @@
+\documentclass[12pt, parskip=half, bibliography=totocnumbered]{scrartcl}
+
+%---------------------------------------------------------------------
+%PACKAGES
+%---------------------------------------------------------------------
+% Sprachpakete
+\usepackage{fontspec} % für 
+\usepackage[T1]{fontenc} % für Umlaut-Kodierung
+\usepackage[ngerman]{babel} % für Silbentrennung
+\usepackage[utf8]{inputenc} % für Umlaute
+\usepackage{microtype} % für bessere Lesbarkeit
+\usepackage{enumitem} % für Aufzählungen
+\usepackage[hidelinks]{hyperref} % für Hyperlinks 
+\usepackage{nameref} % für Referenzen
+\usepackage{lipsum} % für Blindtext
+\usepackage{datetime} % für Datumsformatierung
+\usepackage[style=numeric]{biblatex} % für Literaturverzeichnis
+%\usepackage[style=apa]{biblatex} % APA Zitierstil
+\usepackage{csquotes} % für Anführungszeichen
+\usepackage{marvosym} % für Symbole
+\usepackage[cache=false]{minted} % für Code-Highlighting
+\usepackage{listings} % für Code-Listings
+
+% Grafikpakete
+\usepackage{graphicx} % für Grafiken
+\usepackage{xcolor} % für Farben
+\usepackage{tikz} % für Zeichnungen
+\usetikzlibrary{calc,positioning,shapes.geometric}
+\usepackage[colorinlistoftodos]{todonotes} % für TODOs
+\usepackage{pgfplots} % für Plots
+\usepackage{eso-pic} % 
+
+% Mathematikpakete
+\usepackage{amsmath,amssymb,amstext,amsthm} % für Mathematikumgebungen
+\usepackage{algpseudocode} % für Pseudocode
+
+% Layoutpakete
+\usepackage{float} % für Positionierung von Bildern etc.
+\usepackage[most]{tcolorbox} % für farbige Boxen
+\usepackage{fancyhdr} % für Kopf- und Fußzeilen
+\usepackage{titlesec} % für Anpassungen an Überschriften
+\usepackage[a4paper,inner=28mm,outer=38mm,top=24mm,bottom=28mm,headsep=10mm,footskip=14mm,marginparwidth=30mm,marginparsep=6mm]{geometry} % für Seitenränder
+\usepackage{tabularx} % für Tabellen
+\usepackage{colortbl} % für farbige Tabellen
+
+% Eigene Befehle
+\newdateformat{monthyeardate}{%
+  \monthname[\THEMONTH] \THEYEAR}
+
+\newdateformat{germandate}{%
+  \THEDAY. \monthname[\THEMONTH] \THEYEAR}
+
+% Wrapper für Code-Highlighting mit Minted
+\newcommand{\code}[3]{
+    \begin{listing}[H]
+        \centering
+        \inputminted[fontsize=\footnotesize, linenos=true, frame=lines, framesep=2mm, framerule=0.5pt]{#1}{code/#2}
+        \caption{#3}
+        \label{lst:#3}
+    \end{listing}
+}
+
+% Zentriertes Bild mit Bildunterschrift und Label
+\newcommand{\centerimage}[4]{
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=#2\textwidth]{#1}
+        \caption{#3}
+        \label{fig:#4}
+    \end{figure}
+}
+
+% Tabularx zentrierter Spaltentyp
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+% Tabelle mit Colorbox
+\tcbset{tab1/.style={enhanced,fonttitle=\bfseries,fontupper=\normalsize\sffamily,
+colback=green!10!white,colframe=green!50!black,colbacktitle=green!40!white,
+coltitle=black,center title}}
+
+
+% Theorem Umgebungen mit Colorboxen definieren
+\newtcbtheorem[number within=section]{definition}{Definition}%
+{colback=blue!5!white,colframe=blue!55!white,fonttitle=\bfseries}{def}
+
+\newtcbtheorem[number within=section]{satz}{Satz}%
+{colback=blue!25!white,colframe=blue!90!black,fonttitle=\bfseries}{satz}
+
+\newtcbtheorem[no counter]{beweis}{Beweis}%
+{colback=blue!10!white,colframe=blue!30!black,fonttitle=\bfseries}{beweis}
+
+\newtcbtheorem[no counter]{bemerkung}{Bemerkung}%
+{colback=yellow!5!white,colframe=yellow!75!black,fonttitle=\bfseries}{bem}
+
+\newtcbtheorem[no counter]{beispiel}{Beispiel}%
+{colback=purple!5!white,colframe=purple!50!black,fonttitle=\bfseries}{bsp}
+
+\newtcbtheorem[number within=section]{algorithmus}{Algorithmus}%
+{colback=purple!10!white,colframe=purple!80!black,fonttitle=\bfseries}{alg}
+
+% Titelinformationen
+\title{Thema}
+\author{Johannes Baischer, BEd.}
+\date{\today{}, Salzburg}
+\makeatletter   %erstellt Author und Titel Variable
+
+% Literaturverzeichnis
+\addbibresource{../referenzen.bib}
+\addbibresource{../abbildungen.bib}
+
+% Layout Einstellungen
+\AddToHook{cmd/section/before}{\clearpage} % Neue Seite bei jedem Abschnitt
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}[{\titlerule[1.6pt]}] % Anpassung der Überschriften
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}[{\titlerule[0.4pt]}] % Anpassung der Unterüberschriften
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\center}{\thesubsubsection}{1em}{} % Anpassung der Unterunterüberschriften
+
+% Code Highlighting Einstellungen
+\usemintedstyle{vs}
+\lstloadlanguages{csh}
+\renewcommand\listingscaption{Listing}
+\renewcommand\listoflistingscaption{Code Listings}
+
+%---------------------------------------------------------------------
+%------------------------ TITLE PAGE ---------------------------------
+%---------------------------------------------------------------------
+
+\begin{document}
+\begin{titlepage}
+    \begin{center}
+        \textbf{\Huge Das (be)greifbare Smart Home\\}
+        \textbf{\large Konzeption und Konstruktion einer modularen 12V-IoT-Lernumgebung für die Digitale Grundbildung\\}
+        \vspace{3cm}
+        \textbf{\LARGE MASTERARBEIT\\}
+        \vspace{0.5cm}
+        {\large zur Erlangung des Mastergrades\\Master of Education MEd\\}
+        \vspace{1cm}
+        {\large an der Paris-Lodron-Universität Salzburg\\School of Education}
+        \vspace{1cm}
+        
+        {\large Gutachterin: Mag. Corinna Hörmann, PhD\\}
+        {\large Unterrichtsfach der Masterarbeit:\\ Informatik und Digitale Grundbildung}
+
+
+        \vspace{3cm}
+        \textbf{eingereicht von\\ \textsc{\LARGE \@author } \\}
+        \vfill
+        {\Large Salzburg, \monthyeardate\today}
+    \end{center}
+\end{titlepage}
+
+\pagestyle{empty}   % Keine Kopf- und Fußzeilen auf dieser Seite
+\pagenumbering{Roman}
+\setcounter{page}{1}
+\tableofcontents
+
+\listoftodos % Liste der TODOs
+\todo[color=green]{Remove TODO List}
+
+\vspace{2cm}
+
+%---------------------------------------------------------------------
+%------------------------ Fragen -------------------------------------
+%---------------------------------------------------------------------
+
+\begin{tcolorbox}[title=Mögliche Ergänzungen, colback=orange!5!white, colframe=orange!75!black]
+
+     \begin{itemize}
+         \item ...
+     \end{itemize}
+    
+\end{tcolorbox}
+
+
+
+% Kopf- und Fußzeilen Einstellungen (fancyhdr)
+\pagestyle{fancy}
+\fancyhf{}  % Löschen der Standard Kopf- und Fußzeilen
+\lhead{\@author}
+\rhead{\nouppercase{\rightmark}}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt} % Keine Trennlinie oben (entspricht KOMA-Standard)
+\renewcommand{\footrulewidth}{0pt} % Keine Trennlinie unten
+
+\makeatother %erstellt Author und Titel Variable
+%---------------------------------------------------------------------
+
+%---------------------------------------------------------------------
+%------------------------ EINLEITUNG ---------------------------------
+%---------------------------------------------------------------------
+
+\section{Vorwort}\label{sec:Vorwort}
+
+\pagestyle{fancy}
+
+\vfill
+
+\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
+
+    {} & {
+        ...
+    } & {}\\
+
+    \vspace{2\baselineskip}\\
+
+    {} & {
+        Johannes Baischer
+
+        Salzburg, \germandate\today
+    } & {}\\
+
+    \vspace{2\baselineskip}\\
+
+    {} & {
+        \textbf{(\textit{..., ..., ..., ..., ...})}
+    } & {}
+
+\end{tabularx}
+
+\vfill
+
+\section{Abstract}\label{sec:Abstract}
+
+\vfill
+
+\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
+
+    {} & {
+        ...
+    } & {}\\
+
+    \vspace{2\baselineskip}\\
+
+    {} & {
+        ...
+    } & {}\\
+
+\end{tabularx}
+
+\vfill
+
+%---------------------------------------------------------------------
+%------------------------ HAUPTTEIL ----------------------------------
+%---------------------------------------------------------------------
+
+\section{...}\label{sec:...}
+\pagestyle{fancy} % Kopf- und Fußzeilen Einstellungen ab hier
+\pagenumbering{arabic} 
+\setcounter{page}{1}
+
+...
+
+    \subsection{...}\label{subsec:...}
+    % \ref{sec:client-side} \textit{\nameref{sec:client-side}}
+    % \centerimage{img/Blazor-WebAssembly-erstellen.jpg}{0.9}{Erstellen der WebAssembly-App}{blazor-webassembly-erstellen}
+    % \code{csharp}{serverstartup-builder.cs}{Startup-Logik (Server): program.cs 1/2}
+    % \enquote{Claims}
+
+%---------------------------------------------------------------------
+
+%---------------------------------------------------------------------
+\section{Fazit}\label{sec:fazit}
+
+\vfill
+
+\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
+
+    {} & {
+        ...    
+    } & {}\\
+
+\end{tabularx}
+
+\vfill
+
+%---------------------------------------------------------------------
+
+% Abbildungen, Tabellen und Listings
+\clearpage
+\pagenumbering{roman}
+\listoffigures
+\listoflistings
+\listoftables
+
+% Literaturverzeichnis mit Bibtex
+\printbibliography[heading=bibintoc]
+
+\end{document}

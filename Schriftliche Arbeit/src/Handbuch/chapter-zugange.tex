@@ -1,0 +1,49 @@
+\chapter{Zugänge \& Systemarchitektur}
+
+\section{Zugangsübersicht}
+
+\Sidebar{Sicherheit}
+Die folgende Übersicht zeigt die wichtigsten Zugänge und Dienste, die für den Aufbau und Betrieb der Smart-Home-Lernumgebung relevant sind. Die Logins sind hier nur als Beispiel dargestellt und müssen vor der Nutzung durch die tatsächlichen Zugangsdaten ersetzt werden.
+
+\begin{tabularx}{\linewidth}{X X X X >{\raggedright\arraybackslash}p{1cm} >{\raggedright\arraybackslash}p{3.6cm}}
+    \rowcolor{SmartLight}
+    \textbf{Bereich} & \textbf{Zugriff IP/ID} & \textbf{Port} & \textbf{Benutzer} & \textbf{Passwort} & \textbf{Hinweis} \\
+    \hline
+    WLAN  & MMSE-Smart-Home-Wifi & -- & -- & *** & Verbindung für Router, Server und Lernmodule \\
+    \hline
+    Router Config & 10.0.0.138 & 80 / 443 & admin & *** & lokale Administration im Projekt-Netz \\
+    \hline
+    SSH & 10.0.0.1/\textit{mmse-smarthome}  & 22 & mmse & *** & Befehlszeile für Serververwaltung \\
+    \hline
+    RDP & 10.0.0.1/\textit{mmse-smarthome} & 3389 & mmse & *** & GUI-Zugriff für Wartung und Demonstration \\
+    \hline
+    Ubuntu Server & SSH/RDP & 22 / 3389 & mmse & *** & Benutzeraccount für Kamera-Einbundung\\
+    \hline
+    Home Assistant & 10.0.0.1:8123 & 8123 & mmse & *** & lokale Bedienoberfläche für Smart-Home-Logik \\
+    \hline
+    TP-Link & -- & -- & Johannes.Baischer@nmmse.at & *** & Zugang zur Konfiguration der Kamera\\
+    \hline
+    Kamera & -- & -- & mmse & *** & für Gerätedokumentation und Monitoring \\
+\end{tabularx}
+
+\section{Verwendete Dienste und lokale Adressen}
+
+Die praktische Infrastruktur basiert auf einem klaren Muster: Das Projekt-Netz ist lokal und wird vom Server als Gateway und Router für die Lernumgebung genutzt. Dadurch bleiben die Endgeräte untereinander erreichbar, ohne dass sie aus dem Schulnetz herauslaufen müssen.
+
+\begin{description}[leftmargin=1.8em,style=nextline]
+    \item[Server-Host] Der Basisserver läuft als Xubuntu-Host mit dem Namen \texttt{mmse-smarthome}. Die lokale Verbindung nutzt dabei in der Regel die Adresse \texttt{10.0.0.1} oder den Hostnamen im selben Netzwerk.
+    \item[Router] Der A1-Router bleibt als Verwaltungs- und Verteilungsgerät im lokalen Netz aktiv, aber ohne DHCP-Server (diese Aufgabe übernimmt der Server-Host). Der Router fungiert also nach seiner Konfiguration als \textbf{Access Point} Seine Adresse bleibt \texttt{10.0.0.138}.
+    \item[Home Assistant] Die Automationsoberfläche läuft in der Regel auf Port \texttt{8123}. Damit ist sie auf dem lokalen Netzwerk per Browser erreichbar, zum Beispiel über \texttt{http://10.0.0.1:8123}.
+    \item[SSH und RDP] Für Administration und Fernwartung werden SSH auf Port \texttt{22} sowie Remote Desktop auf Port \texttt{3389} genutzt. Beide Dienste greifen auf denselben Server-Account zu.
+    \item[Tailscale] \Sidebar{Fernzugriff} Für externen Fernzugriff wird ein Overlay-VPN über Tailscale eingerichtet. Dadurch bleibt der Zugriff auch außerhalb des lokalen Netzes möglich, ohne Ports im Schulnetz freizugeben.
+\end{description}
+
+\section{Sinnvolle Arbeitsweise / Trouble Shooting}
+
+\begin{itemize}[leftmargin=1.3em,label=\textcolor{SmartTeal}{\small\textbullet}]
+    \item Kennzeichne die Zugangsdaten immer am Anfang der Projektphase, damit alle Beteiligten denselben Zugang verwenden.
+    \item Nutze getrennte Benutzer für Server, Kamera und Home Assistant, um Fehlerquellen zu reduzieren.
+    \item Verwende möglichst lokale Zugriffspfadnamen wie \texttt{mmse-smarthome} statt nur IP-Adressen, wenn du dich im selben Netzwerk befindest.
+    \item Stelle sicher, dass alle Geräte nach dem Netzwerksetup einmal neu gestartet werden, damit sie die neue IP-Konfiguration übernehmen (besonders nach einmaligem DHCP Wechsel von Router auf Server-Host).
+    \item \Sidebar{Internet Zugang} Nachdem der A1-Router als Access-Point konfiguriert wird, kann der Server sich mit einem beliebigem zweiten Netzwerk verbinden, um \textbf{Internet Zugang} zu erhalten. 
+\end{itemize}

@@ -1,0 +1,56 @@
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+	% Grundfläche
+	\fill[SmartPaper] (current page.south west) rectangle (current page.north east);
+
+	% Diagonale Trennung: helle obere linke Fläche
+	\fill[white] (current page.north west)
+		-- ($(current page.north east)+(0,-8.8cm)$)
+		-- ($(current page.south east)+(-8.8cm,0)$)
+		-- (current page.south west)
+		-- cycle;
+
+	% Dunklere technische Fläche unten rechts
+	\fill[SmartBlue!92] (current page.south east)
+		-- ($(current page.south west)+(0,8.8cm)$)
+		-- ($(current page.north west)+(8.8cm,0)$)
+		-- (current page.north east)
+		-- cycle;
+
+	% Feine Diagonallinie
+	\draw[SmartTeal!55,line width=1.2pt] ($(current page.north east)+(0,-8.8cm)$) -- ($(current page.south west)+(8.8cm,0)$);
+
+	% Titelblock mit transparenter Fläche für hohe Lesbarkeit.
+	\node[anchor=north west, rounded corners=3mm, fill=white, fill opacity=0.86, text opacity=1,
+		inner xsep=18pt, inner ysep=16pt, text width=0.42\paperwidth, align=left]
+		at ($(current page.north west)+(1.35cm,-1.55cm)$) {%
+		\begin{minipage}[t]{0.42\paperwidth}
+			{\sffamily\bfseries\small\color{SmartTeal}TECHNISCHES HANDBUCH}\\[1.35em]
+			{\sffamily\bfseries\color{SmartInk}\fontsize{31}{35}\selectfont Handbuch zum\\(be)greifbaren Smart Home}\\[1.0em]
+			{\sffamily\normalsize\color{SmartInk}Konzeption und Konstruktion einer modularen 12V-IoT-Lernumgebung für die Digitale Grundbildung}\\[1.45em]
+			\CoverLogoGraphic\\[1.55em]
+			{\sffamily\normalsize\color{SmartInk}Sekundarstufe I \textbullet{} Unterrichts- und Laborumgebung \textbullet{} modulare Hardware \textbullet{} Digitale Grundbildung}
+		\end{minipage}
+	};
+
+	% Bildbereich mit sehr leichter Fläche, damit das Platzhalterbild ruhig wirkt.
+	\node[anchor=north east, rounded corners=3mm, fill=white, fill opacity=0.14, text opacity=1,
+		inner xsep=14pt, inner ysep=14pt, text width=0.25\paperwidth, align=center]
+		at ($(current page.north east)+(-1.45cm,-2.00cm)$) {
+			\CoverImageGraphic
+		};
+
+	% Unterer Abschlussbereich für Autor und Erscheinungsjahr.
+	\node[anchor=south, rounded corners=3mm, fill=SmartLight, fill opacity=0.92, text opacity=1,
+		inner xsep=18pt, inner ysep=12pt, text width=0.82\paperwidth, align=center]
+		at ($(current page.south)+(0,1.15cm)$) {%
+		\begin{minipage}[t]{0.82\paperwidth}
+			\begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}r@{}}
+				{\sffamily\bfseries\color{SmartBlue}\small Autor} & {\sffamily\bfseries\color{SmartTeal}\small ERSCHEINUNGSJAHR}\\[0.65em]
+				{\sffamily\bfseries\color{SmartInk}\fontsize{20}{22}\selectfont Johannes Baischer} & {\sffamily\bfseries\color{SmartInk}\fontsize{20}{22}\selectfont 2026}
+			\end{tabular*}
+		\end{minipage}
+		};
+\end{tikzpicture}
+\end{titlepage}

@@ -1,0 +1,182 @@
+\chapter{Server Setup \& Infrastruktur}
+
+\section{Ziel und Aufbau}
+
+Der Server bildet das zentrale Rückgrat der Smart-Home-Lernumgebung. Er stellt die Grundlage für Netzwerkzugang, Fernverwaltung, Containerisierung und zentrale Automationslogik bereit. In diesem Kapitel installierst und konfigurierst du die Infrastruktur schrittweise.
+
+\Sidebar{Working Principle}
+Ein Server muss in der Regel drei Dinge zuverlässig leisten: Zugriff auf das Internet, lokale Verteilung im Projekt-Netz und Remote-Verwaltung. Das Design legt dabei bewusst die Verantwortung auf den Xubuntu-Host, während der A1-Router nur noch als Netzwerkausgang und Access Point dient.
+
+\section{Xubuntu Installation}
+
+\begin{enumerate}
+    \item \textbf{Stelle sicher, dass das Servergerät keine wichtigen Daten enthält, da die Installation das System vollständig überschreibt.}
+    \item Lade das aktuelle \textbf{Xubuntu-24.04-Image} von der offiziellen Seite (\url{https://xubuntu.org/release/24.04/}) herunter und brenne es mit der Software \textbf{balenaEtcher} (\url{https://etcher.balena.io/}) auf einen USB-Stick. \KeyImage[]{Screenshot}{balenaEtcher: USB-Image auf Stick brennen}{../../media/balena-etcher.png}
+    \item Schließe den USB-Stick an das Servergerät an und starte das System über das BIOS- bzw. Boot-Menü. Manche Hersteller verlangen ein ändern der Boot-Reihenfolge, sodass der USB-Stick als erstes Gerät geladen wird.
+    \begin{InfoBox}{Wie gelange ich ins BIOS bzw. Boot-Menü?} 
+        \scriptsize Je nach Hersteller und Modell des Geräts kann der Zugang unterschiedlich sein. Häufig sind die Tasten \texttt{F2}, \texttt{F10}, \texttt{F12} oder \texttt{ESC} relevant. Beim Neustart des Geräts achte auf die entsprechende Anzeige, die den Zugang zum BIOS oder Boot-Menü beschreibt und drücke die passende Taste rechtzeitig. \textbf{Alle Herstellerhinweise findet man frei zugänglich im Internet.}
+    \end{InfoBox}\Sidebar{BIOS Menü}
+    \item Wähle die Option \textit{Try or install Xubuntu}.
+    \item Führe den Installationsprozess durch. Erstelle dabei einen passenden Benutzer mit einem sicheren Passwort und benenne das Gerät. Für den durchgeführten Testaufbau wählen wir als Benutzer das Kürzel der Schule \texttt{mmse} und als Gerätenamen \texttt{mmse-smarthome}.
+\end{enumerate}
+
+\begin{InfoBox}{Hinweis zur Xubuntu-Installation}
+    \scriptsize Die Installation von Xubuntu ist ein einmaliger Schritt. Danach kann das System über die grafische Oberfläche oder per SSH verwaltet werden. Eine detaillierte Schritt-für-Schritt-Anleitung für die Installation von Xubuntu ist im Internet verfügbar, z. B. auf \url{https://ubuntu.com/desktop/docs/en/latest/tutorial/install-ubuntu-desktop/}.
+\end{InfoBox}
+
+\begin{InfoBox}{Hinweis zu alten Geräten}
+    \scriptsize Sollte ein sehr altes Gerät verwendet werden, kann es vorkommen, dass bestimmte Komponenten wie WLAN-Chipsätze nicht mehr unterstützt werden. In diesem sehr seltenen Fall kann es notwendig sein, auf ein aktuelleres Gerät auszuweichen oder Ausweichlösungen zu nutzen.
+    
+    \textit{Der verwendete Toshiba Satellite Pro Laptop, wird mit seinem Broadcom-WLAN-Chipsatz nicht unterstützt. Hier wurde ein Edimax EW-7811UN USB-WLAN-Stick als Ersatz verwendet.}
+
+    \textbf{In diesem Schritt solltest du jedenfalls eine temporäre Internetverbindung über LAN oder WLAN sicherstellen, um die Installation und spätere Updates durchführen zu können.} Diese Verbindung kann später wieder entfernt werden, sobald das lokale Projekt-Netzwerk korrekt eingerichtet ist.
+\end{InfoBox}
+
+\KeyImage[]{Screenshot}{Erfolgreicher Xubuntu Startup}{../../media/Xubuntu-Desktop.png}
+
+\section{SSH einrichten}
+
+SSH ermöglicht den sicheren Zugriff auf den Server über die Kommandozeile. Damit kannst du das System auch von einem anderen Rechner aus verwalten, ohne direkt am Gerät zu sitzen.
+
+\KeyImage[width=0.6\textwidth]{Screenshot}{Terminal öffnen}{../../media/terminal-from-start-menu.png}
+
+\CodeFile[SSH-Installation und Aktivierung auf dem Xubuntu-Server]{bash}{code/ssh-setup.sh}\label{lst:ssh-setup}
+
+Die im Listing~\ref{lst:ssh-setup} (\nameref{lst:ssh-setup}) zu sehenden Befehle bewirken beim Eingeben in ein geöffnetes Terminal Folgendes:
+
+\begin{enumerate}
+    \item Installiert den aktuellsten OpenSSH-Server auf dem Xubuntu-Host.
+    \item Aktiviert den Dienst automatisch beim Systemstart.
+    \item Öffnet den SSH-Port in der Firewall und prüft den Verbindungsstatus.
+    \item Gibt die lokale IP-Adresse des Servers aus, die für die Verbindung von einem anderen Rechner benötigt wird.
+\end{enumerate}
+
+\begin{InfoBox}{SSH-Verbindung testen}
+    \scriptsize Teste die Verbindung von einem anderen Rechner im gleichen Netzwerk mit dem Befehl \texttt{ssh <Benutzer>@<IP-Adresse>}. Dabei ersetzt du \texttt{<Benutzer>} durch den zuvor erstellten Benutzernamen und \texttt{<IP-Adresse>} durch die vom Server ausgegebene Adresse. Bestätige die Sicherheitsabfrage mit \texttt{yes} und gib das Passwort ein, um die Verbindung herzustellen. Danach kannst du den Server über die Kommandozeile steuern.
+\end{InfoBox}
+
+\subsection{Passwortlose SSH Verbindung}
+
+Sollte die Verbindung regelmäßig genutzt werden, kann es sinnvoll sein, den Rechner, mit dem man sich auf den Server verbindet, als vertrauenswürdiges Gerät zu hinterlegen. Dadurch \textbf{entfällt die Eingabe des Benutzerpassworts} bei jeder SSH-Verbindung. 
+Dafür erstellen wir einmalig einen sog. \textit{SSH-Key} auf unserem Windows-Rechner und übertragen den öffentlichen Teil des Schlüssels auf den Server. Danach authentifiziert sich der Rechner ab der nächsten SSH-Verbindung automatisch durch seinen privaten Schlüssel, ohne dass wir das eigentliche Passwort eingeben müssen.
+
+\KeyImage[]{Screenshot}{PowerShell in Windows öffnen}{../../media/open-powershell-windows.png}
+
+\CodeFile[PowerShell-Befehle für SSH-Keys in Windows]{bash}{code/ssh-key-setup.ps1}
+
+\begin{InfoBox}{Hinweis zu Benutzername und Hostname}
+    \scriptsize Der Benutzername und Hostname des Servers müssen in den Befehlen angepasst werden.
+\end{InfoBox}
+
+\begin{InfoBox}{SSH-Keys für MacOS und Linux}
+    \scriptsize Auf MacOS und Linux ist die Vorgehensweise ähnlich. Auch dort können SSH-Keys erstellt und auf den Server übertragen werden. Die genauen Befehle findest du unter \url{https://man.openbsd.org/ssh-keygen.1}.
+    
+\end{InfoBox}
+
+\section{Remote Desktop konfigurieren}
+
+Mit Remote Desktop kannst du zusätzlich zur Fernsteuerung über die Kommandozeile den grafischen Desktop des Xubuntu-Servers über das Netzwerk ansteuern. Das ist besonders hilfreich, wenn du GUI-basierte Konfigurationen oder Wartungsarbeiten durchführst, bei denen das grafische Einstellungsmenü hilfreich sein könnte.
+
+\begin{enumerate}
+    \item Terminal öffnen
+    \item Aktualisiere das System und installiere anschließend den RDP-Server \texttt{xrdp}.
+    \item Konfiguriere \texttt{xrdp} so, dass es die XFCE-Oberfläche verwendet. \Sidebar{Xubuntu basiert auf XFCE}
+    \item Vergib die nötigen Zertifikatsrechte und starte den Dienst neu.
+    \item Öffne den RDP-Port in der Firewall und prüfe mit \texttt{hostname -I} die Serveradresse.
+\end{enumerate}
+
+\CodeFile[Xubuntu-Setup für Remote Desktop]{bash}{code/rdp-setup.sh}
+
+\Sidebar{Vor der Remote Desktop Verbindung}
+Wenn der Laptop lokal weiter aktiv ist, kann der gleiche Benutzer nicht gleichzeitig per Remote Desktop angemeldet sein. \textbf{Melde dich deshalb immer erst lokal ab, bevor du eine neue Remote-Verbindung startest.} Das verhindert schwarze Bildschirme und Abbrüche.
+
+Verwende für die Remote-Verbindung den Windows-Dienst \emph{Remotedesktopverbindung} und trage dort den Hostnamen oder die IP-Adresse des Servers ein. Danach kannst du dich mit dem zuvor erstellten Benutzer anmelden.
+
+\KeyImage[width=0.6\textwidth]{Screenshot}{Windows-Remote-Desktop}{../../media/Remote-Desktop-Verbindung.png}
+
+\subsection{Energieoptionen}
+
+Falls es sich beim Servergerät um einen Laptop handelt, müssen die systemweiten Energieeinstellungen angepasst werden. Dadurch wird verhindert, dass das Gerät nach inaktiver Zeit oder bei geschlossenem Deckel in den Energiesparmodus wechselt. Das ist besonders wichtig, wenn \textbf{kein Benutzer lokal angemeldet ist}, da sonst die USB-Stromversorgung (z.\,B. für den WLAN-Stick) gekappt wird.
+
+\CodeFile[Energieoptionen für Laptop-Server]{bash}{code/energieoptionen.sh}\label{lst:energieoptionen}
+
+\todo[color=green]{Hier kontrollieren}
+
+Die Anpassung erfolgt wie in Listing~\ref{lst:energieoptionen} (\nameref{lst:energieoptionen}) in zwei Schritten:
+
+\begin{enumerate}
+    \item \textbf{Aktion beim Schließen des Deckels (Lid Switch) deaktivieren:}\\
+    Öffne die Systemd-Login-Konfiguration im Terminal mit \texttt{sudo nano /etc/systemd/logind.conf}. Suche dort nach den folgenden Zeilen, \textbf{entferne das \texttt{\#}-Zeichen am Zeilenanfang} und setze den Wert jeweils auf \texttt{ignore}:
+    \begin{itemize}
+        \item \texttt{HandleLidSwitch=ignore}
+        \item \texttt{HandleLidSwitchExternalPower=ignore}
+        \item \texttt{HandleLidSwitchDocked=ignore}
+    \end{itemize}
+    Speichere die Datei (\texttt{Strg+O}, \texttt{Enter}, \texttt{Strg+X}) und starte den Dienst mit \texttt{sudo systemctl restart systemd-logind} neu (\textit{kann die Session kurz unterbrechen}).
+
+    \item \textbf{Systemweiten Standby und Ruhezustand komplett deaktivieren:}\\
+    Da der Laptop dauerhaft als Server betrieben wird, werden sämtliche Energiespar-Targets auf Systemebene blockiert:
+    \begin{itemize}
+        \item \texttt{sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target}
+    \end{itemize}
+    Dadurch wird verhindert, dass das Betriebssystem in den Schlafmodus wechselt.
+\end{enumerate}
+
+\begin{InfoBox}{Energiespar-Sperre aufheben}
+    \scriptsize Falls die Blockierung der Energiespar-Targets später wieder aufgehoben werden soll, kann dies mit dem Befehl \texttt{sudo systemctl unmask sleep.target suspend.target hibernate.target hybrid-sleep.target} rückgängig gemacht werden.
+\end{InfoBox}
+
+\section{Docker Installation}
+
+Docker erlaubt die zentrale Ausführung von Services in isolierten Containern. Für das Smart-Home-Setup ist diese Struktur sinnvoll, weil damit Home Assistant und andere Dienste sauber voneinander getrennt laufen können.
+
+\begin{enumerate}
+    \item Installiere die Docker-Engine und Docker Compose auf dem Xubuntu-System.
+    \item Aktiviere Docker automatisch beim Systemstart.
+    \item Ergänze den aktuellen Benutzer in der Docker-Gruppe, damit Containerbefehle ohne Administratorrechte laufen.
+\end{enumerate}
+
+\CodeFile[Installation von Docker Engine und Docker Compose]{bash}{code/docker-install.sh}\label{lst:docker-install}
+
+
+\section{Router Setup und Netzstruktur}
+
+Die zentrale Idee des Netzwerkaufbaus ist einfach: Der Xubuntu-Server übernimmt die Internetverbindung per WLAN und verteilt sie über das lokale LAN an die Lernumgebung. Der A1-Router dient dabei nicht als DHCP-Server, sondern nur noch als reiner Netzwerkerweiterer.
+
+\begin{enumerate}
+    \item Verbinde den Xubuntu-Server über WLAN mit dem Internet und prüfe die Verbindung.
+    \item Öffne das Router-Interface unter \texttt{10.0.0.138} und deaktiviere dort den DHCP-Server sowie mögliche feste IP-Reservierungen.
+    \item Weise der Ethernet-Verbindung des Laptops eine feste lokale Adresse zu: \texttt{10.0.0.1/24}.
+    \item Starte die Verbindung neu und prüfe mit \texttt{ip a}, ob die Ethernet-Schnittstelle nun die neue IP zeigt.
+    \item Schließe den Server per LAN an den A1-Router an und nutze so das isolierte Projekt-Netz.
+    \item Starte die Endgeräte neu, damit sie den neuen DHCP-Server aus dem Xubuntu-Laptop übernehmen.
+\end{enumerate}
+
+\CodeFile[Internet-Sharing und lokales Subnetz auf dem Xubuntu-Host]{bash}{code/router-network-share.sh}
+
+\section{Tailscale für Fernzugriff}
+
+Tailscale schafft eine sichere VPN-Verbindung über eine virtuelle Overlay-Netzstruktur. Dadurch kannst du auch von außerhalb des Schulnetzes auf die Smart-Home-Oberfläche zugreifen, ohne explizit Ports im Netzwerk zu öffnen.
+
+\begin{enumerate}
+    \item Installiere Tailscale auf dem Xubuntu-Server.
+    \item Starte Tailscale und authentifiziere den Server im eigenen Konto.
+    \item Installiere Tailscale auch auf dem privaten Rechner oder Smartphone.
+    \item Verbinde beide Geräte im selben Tailscale-Account und rufe dann die Tailscale-IP des Servers auf.
+\end{enumerate}
+
+\CodeFile[Installation und Anmeldung von Tailscale auf dem Server]{bash}{code/tailscale-install.sh}
+
+\section{Prüfcheckliste vor der Präsentation}
+
+\begin{itemize}[leftmargin=1.3em,label=\textcolor{SmartTeal}{\small\textbullet}]
+    \item Internetzugang über WLAN ist vorhanden.
+    \item Die lokale Ethernet-Verbindung zeigt die Adresse \texttt{10.0.0.1}.
+    \item Der DHCP-Server des A1-Routers ist deaktiviert.
+    \item Home Assistant ist über \texttt{10.0.0.1:8123} erreichbar.
+    \item Der Fernzugriff über Tailscale funktioniert ebenfalls außerhalb des Netzwerks.
+\end{itemize}
+
+\section{Zusammenfassung}
+
+Die Server-Infrastruktur verbindet drei Ebenen: Internetzugang, lokales Lernnetz und sichere Fernwartung. Sobald Xubuntu, SSH, Docker, Router-Setup und Tailscale korrekt eingerichtet sind, entsteht eine stabile Grundlage für alle Smart-Home-Experimente im Unterricht.

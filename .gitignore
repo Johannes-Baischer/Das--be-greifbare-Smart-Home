@@ -1,3 +1,7 @@
+### File ignores
+*.code-workspace
+
+### Tex ignores
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
@@ -11,6 +15,7 @@
 *.cb
 *.cb2
 .*.lb
+
 
 ## Intermediate documents:
 *.dvi
@@ -47,6 +52,7 @@ rubber.cache
 ## Build tool directories for auxiliary files
 # latexrun
 latex.out/
+build/
 
 ## Auxiliary and intermediate files from other packages:
 # algorithms

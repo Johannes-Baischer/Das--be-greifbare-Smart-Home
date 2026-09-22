@@ -1,0 +1,361 @@
+\documentclass[11pt,twoside,open=any]{report}
+
+%---------------------------------------------------------------------
+%PACKAGES
+%---------------------------------------------------------------------
+% Sprachpakete
+\usepackage{fontspec} % für 
+\usepackage[T1]{fontenc} % für Umlaut-Kodierung
+\usepackage[ngerman]{babel} % für Silbentrennung
+\usepackage{microtype} % für bessere Lesbarkeit
+\usepackage{enumitem} % für Aufzählungen
+\usepackage[hidelinks]{hyperref} % für Hyperlinks 
+\usepackage{nameref} % für Referenzen
+\usepackage{lipsum} % für Blindtext
+\usepackage{datetime} % für Datumsformatierung
+\usepackage[style=numeric]{biblatex} % für Literaturverzeichnis
+%\usepackage[style=apa]{biblatex} % APA Zitierstil
+\usepackage{csquotes} % für Anführungszeichen
+\usepackage{marvosym} % für Symbole
+\usepackage[cache=false]{minted} % für Code-Highlighting
+\usepackage{listings} % für Code-Listings
+\usepackage{etoolbox} % für bedingte Anweisungen
+
+% Grafikpakete
+\usepackage{graphicx} % für Grafiken
+\usepackage{xcolor} % für Farben
+\usepackage{tikz} % für Zeichnungen
+\usetikzlibrary{calc,positioning,shapes.geometric}
+\usepackage[colorinlistoftodos]{todonotes} % für TODOs
+\usepackage{pgfplots} % für Plots
+\usepackage{eso-pic} % für Hintergrundbilder
+\usepackage[most]{tcolorbox} % für farbige Boxen
+\usepackage{accsupp} % für nicht-kopierbare Zeilen in Listings
+\usepackage{float} % Ermöglicht die strikte Platzierung mit [H]
+
+% Mathematikpakete
+\usepackage{amsmath,amssymb,amstext,amsthm} % für Mathematikumgebungen
+\usepackage{algpseudocode} % für Pseudocode
+
+% Layoutpakete
+\usepackage{float} % für Positionierung von Bildern etc.
+\usepackage[most]{tcolorbox} % für farbige Boxen
+\usepackage{fancyhdr} % für Kopf- und Fußzeilen
+\usepackage{titlesec} % für Anpassungen an Überschriften
+\usepackage[a4paper,inner=28mm,outer=38mm,top=24mm,bottom=28mm,headsep=10mm,footskip=14mm,marginparwidth=30mm,marginparsep=6mm]{geometry} % für Seitenränder
+\usepackage{tabularx} % für Tabellen
+\usepackage{colortbl} % für farbige Tabellen
+
+%---------------------------------------------------------------------
+%EINSTELLUNGEN und EIGENE BEFEHLE
+%---------------------------------------------------------------------
+
+% Strecken von Text vermeiden
+\raggedbottom
+\setlist{itemsep=0.4em, parsep=0pt, topsep=0.5em, partopsep=0pt}
+% Das Design für die erste Ebene aller enumerate-Listen
+\setlist[enumerate,1]{leftmargin=1.3em, label=\textcolor{SmartBlue}{\arabic*.}}
+
+% Typografie: moderne Sans-Schriften, mit robustem Fallback.
+\defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\IfFontExistsTF{Fira Sans}{%
+	\setmainfont{Fira Sans}
+	\setsansfont{Fira Sans}
+}{%
+	\setmainfont{TeX Gyre Heros}
+	\setsansfont{TeX Gyre Heros}
+}
+\IfFontExistsTF{Fira Mono}{\setmonofont{Fira Mono}}{\setmonofont{TeX Gyre Heros Mono}}
+
+% Farben: Blau/Türkis, technisch und freundlich
+\definecolor{SmartBlue}{HTML}{0F4C81}
+\definecolor{SmartTeal}{HTML}{00A6A6}
+\definecolor{SmartInk}{HTML}{1E2A32}
+\definecolor{SmartPaper}{HTML}{F7FAFC}
+\definecolor{SmartLight}{HTML}{E6F3F4}
+
+
+% --- colorbox listings ---
+\tcbuselibrary{listings}
+
+% --- Hilfsbefehl für nicht-kopierbare Zeilennummern ---
+\newcommand{\nocopy}[1]{%
+    \BeginAccSupp{ActualText={}}#1\EndAccSupp{}%
+}
+
+\makeatletter
+% --- Befehl \CodeFile definieren ---
+\newcommand{\CodeFile}[3][]{%
+    % 1. Zähler VOR der Box auf Dokumentenebene erhöhen
+    \refstepcounter{lstlisting}%
+    % 2. Eintrag im Listings-Verzeichnis & Nameref-Titel festlegen
+    \ifblank{#1}{%
+        \protected@edef\@currentlabelname{Listing \thelstlisting}%
+    }{%
+        \addcontentsline{lol}{lstlisting}{\protect\numberline{\thelstlisting}#1}%
+        \protected@edef\@currentlabelname{#1}%
+    }%
+    % 3. Die eigentliche Farb-Box zeichnen
+    \tcbinputlisting{%
+        listing file={#3},
+        listing options={
+            language=#2,
+            basicstyle=\ttfamily\small\color{SmartInk},
+            keywordstyle=\bfseries\color{SmartBlue},
+            stringstyle=\color{SmartTeal},
+            commentstyle=\itshape\color{gray},
+            numbers=left,                  
+            numberstyle=\tiny\sffamily\color{gray}\nocopy,
+            numbersep=12pt,
+            showstringspaces=false,
+            breaklines=true,               
+            tabsize=2
+        },
+        listing only,
+        enhanced,                          
+        width=\linewidth-1.6cm,            
+        enlarge left by=0.8cm,             
+        arc=4pt,                           
+        outer arc=4pt,
+        colback=SmartPaper,                
+        colframe=SmartBlue!85,             
+        coltitle=white,                    
+        boxrule=1pt,                       
+        bottomrule=1.5pt,                  
+        drop shadow=SmartInk!15,           
+        left=2mm, right=4mm, top=2mm, bottom=2mm,
+        fonttitle=\sffamily\bfseries\footnotesize,
+        title={Listing~\thelstlisting\ifblank{#1}{}{: #1} \hfill \fcolorbox{white}{white}{\textcolor{SmartBlue}{\texttt{\,#2\,}}}},
+        after={\vspace{1.2em}},
+    }%
+    % 4. Nameref-Titel nach dem Schließen der Box erneut sichern für das nachfolgende \label
+    \ifblank{#1}{%
+        \protected@edef\@currentlabelname{Listing \thelstlisting}%
+    }{%
+        \protected@edef\@currentlabelname{#1}%
+    }%
+}
+\makeatother
+
+% --- Eigene Umgebung für Hinweis-Boxen ---
+\newtcolorbox{InfoBox}[1]{
+    enhanced,
+    arc=4pt,
+    colback=SmartPaper,
+    colframe=SmartBlue!85,
+    boxrule=1pt,
+    left=4mm, right=4mm, top=3mm, bottom=3mm,
+    drop shadow=SmartInk!15,
+    coltitle=white,
+    fonttitle=\sffamily\bfseries\footnotesize,
+    title={#1}, % Der Titel wird als Parameter übergeben
+    after={\vspace{1.2em}}
+}
+
+% PDF-Metadaten und Lesbarkeit
+\hypersetup{
+	pdftitle={Handbuch zum (be)greifbaren Smart Home},
+	pdfauthor={Johannes Baischer},
+	pdfsubject={Technisches Handbuch zur Masterarbeit "Das (be)greifbare Smart Home" von Johannes Baischer},
+	pdfkeywords={Smart Home, IoT, Unterricht, Sekundarstufe I, Handbuch},
+	colorlinks=true,
+	linkcolor=SmartBlue,
+	urlcolor=SmartTeal,
+	citecolor=SmartBlue
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\setlength{\headheight}{14pt}
+
+% Fußzeile
+\newcommand{\FooterLogoPath}{}
+\newif\ifSmartHomeFooterLogoSet
+\SmartHomeFooterLogoSetfalse
+\newcommand{\SetFooterLogo}[1]{\gdef\FooterLogoPath{#1}\SmartHomeFooterLogoSettrue}
+\newcommand{\FooterLogoGraphic}{%
+	\ifSmartHomeFooterLogoSet
+		\IfFileExists{\FooterLogoPath}{\includegraphics[height=10mm]{\FooterLogoPath}}{}
+	\fi
+}
+
+% Cover-Elemente:
+\newcommand{\CoverLogoPath}{}
+\newif\ifSmartHomeCoverLogoSet
+\SmartHomeCoverLogoSetfalse
+\newcommand{\SetCoverLogo}[1]{\gdef\CoverLogoPath{#1}\SmartHomeCoverLogoSettrue}
+\newcommand{\CoverImagePath}{}
+\newif\ifSmartHomeCoverImageSet
+\SmartHomeCoverImageSetfalse
+\newcommand{\SetCoverImage}[1]{\gdef\CoverImagePath{#1}\SmartHomeCoverImageSettrue}
+\newcommand{\CoverLogoGraphic}{%
+	\ifSmartHomeCoverLogoSet
+		\IfFileExists{\CoverLogoPath}{\includegraphics[width=0.41\paperwidth]{\CoverLogoPath}}{%
+			\fcolorbox{SmartBlue!35}{white}{\parbox[c][14mm][c]{28mm}{\centering\sffamily\bfseries LOGO}}%
+		}%
+	\else
+		\fcolorbox{SmartBlue!35}{white}{\parbox[c][14mm][c]{28mm}{\centering\sffamily\bfseries LOGO}}%
+	\fi
+}
+\newcommand{\CoverImageGraphic}{%
+    \ifSmartHomeCoverImageSet
+        \IfFileExists{\CoverImagePath}{%
+            \includegraphics[width=\linewidth,height=.50\paperheight,keepaspectratio]{\CoverImagePath}%
+        }{%
+            \fcolorbox{white}{SmartLight}{%
+                \parbox[c][.50\paperheight][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+                    \centering\sffamily\bfseries\Large Platzhalterbild\\[0.8em]
+                    \normalsize Trage hier später ein Foto, eine Illustration oder ein Renderbild ein.
+                }%
+            }%
+        }%
+    \else
+        \fcolorbox{white}{SmartLight}{%
+            \parbox[c][.50\paperheight][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+                \centering\sffamily\bfseries\Large Platzhalterbild\\[0.8em]
+                \normalsize Trage hier später ein Foto, eine Illustration oder ein Renderbild ein.
+            }%
+        }%
+    \fi
+}
+
+% Seitenkopf/-fuß: Layout mit Logo innen und Seitenzahl außen.
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\LARGE\sffamily\color{SmartBlue}\nouppercase{\leftmark}}
+\fancyfoot[LO,RE]{\FooterLogoGraphic}
+\fancyfoot[LE,RO]{\LARGE\sffamily\color{SmartBlue}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Überschreibt den Standard-Stil für Kapitel-Anfangsseiten
+\fancypagestyle{plain}{
+    \fancyhf{} % Alles löschen
+    \fancyfoot[LO,RE]{\FooterLogoGraphic} % Logo auch hier einbinden
+    \fancyfoot[LE,RO]{\LARGE\sffamily\color{SmartBlue}\thepage} % Seitenzahl auch hier
+    \renewcommand{\headrulewidth}{0pt} % Keine Linie oben auf Kapitelseiten
+    \renewcommand{\footrulewidth}{0pt}
+}
+
+
+% Hintergrundgrafik auf jeder Seite
+\newcommand{\SmartHomePageBackground}{%
+	\begin{tikzpicture}[remember picture,overlay]
+		\fill[SmartTeal,opacity=0.10] ($(current page.south west)+(0.8cm,0.0cm)$) -- ++(4.5cm,0) -- ++(-1.0cm,1.4cm) -- cycle;
+		\fill[SmartBlue,opacity=0.08] ($(current page.south east)+(-0.8cm,0.0cm)$) -- ++(-5.4cm,0) -- ++(1.8cm,1.8cm) -- cycle;
+		\draw[SmartTeal!35,opacity=0.22,line width=0.8pt] ($(current page.south west)+(1.2cm,1.0cm)$) -- ($(current page.south east)+(-1.2cm,1.0cm)$);
+	\end{tikzpicture}%
+}
+\AddToShipoutPictureBG{\SmartHomePageBackground}
+
+
+% Kapitel- und Abschnittsdesign
+\titleformat{\chapter}[display]
+	{\sffamily\bfseries\color{SmartInk}}
+	{\filright\Huge\color{SmartTeal}\thechapter}
+	{0.4em}
+	{\titlerule[1pt]\vspace{0.8ex}\Huge}
+	[\vspace{0.6ex}\titlerule]
+
+\titlespacing*{\chapter}{0pt}{2.0ex plus 1ex minus .2ex}{1.2ex}
+
+\titleformat{\section}
+	{\sffamily\bfseries\Large\color{SmartBlue}}
+	{\llap{\color{SmartTeal}\rule{1.1cm}{1.1pt}\hspace{0.8em}}}
+	{0pt}
+	{}
+
+\titleformat{\subsection}
+	{\sffamily\bfseries\large\color{SmartInk}}
+	{\color{SmartTeal}\rule{5pt}{5pt}\hspace{0.5em}}
+	{0pt}
+	{}
+
+\titleformat{\subsubsection}
+	{\sffamily\bfseries\normalsize\color{SmartInk}}
+	{\color{SmartBlue}\rule{3.5pt}{3.5pt}\hspace{0.5em}}
+	{0pt}
+	{}
+
+% Layout Elemente
+\newcommand{\Sidebar}[1]{%
+    \ifodd\value{page}%
+        \marginpar{\raggedright\footnotesize\sffamily\color{SmartBlue}\textbf{#1}}%
+    \else%
+        \marginpar{\raggedleft\footnotesize\sffamily\color{SmartBlue}\textbf{#1}}%
+    \fi%
+}
+
+% Befehl: \KeyImage[width=...]{Quelle}{Caption}{Dateipfad}
+\newcommand{\KeyImage}[4][]{%
+    \begin{figure}[H]
+        \centering
+        \sbox0{%
+            \ifblank{#1}{%
+                \includegraphics[width=\dimexpr 0.86\textwidth\relax]{#4}%
+            }{%
+                \includegraphics[#1]{#4}%
+            }%
+        }%
+        \begin{tcolorbox}[
+            enhanced,
+            width=\dimexpr\wd0 + 8mm\relax,
+            colframe=SmartBlue!40,
+            colback=white,
+            arc=4pt,
+            boxrule=0.8pt,
+            drop shadow=SmartInk!10,
+            left=2mm, right=2mm, top=2mm, bottom=1.5mm,
+            nobeforeafter
+        ]
+            \centering
+            \usebox{0}%
+            % Optionale Quellenangabe klein unter dem Bild anzeigen
+            \ifblank{#2}{}{%
+                \vspace{0.3em}
+                {\tiny\sffamily\color{gray}Quelle: #2\par}%
+            }%
+        \end{tcolorbox}
+        \caption{#3}
+    \end{figure}%
+}
+
+% Literaturverzeichnis
+\addbibresource{../references.bib}
+\addbibresource{../abbildungen.bib}
+
+% Dokumentdaten
+\title{Handbuch zum (be)greifbaren Smart Home}
+\author{Johannes Baischer}
+\date{\today}
+
+%---------------------------------------------------------------------
+%------------------------ Dokument -----------------------------------
+%---------------------------------------------------------------------
+\begin{document}
+
+% Layoutbilder setzen
+\SetCoverLogo{../../media/Einrichtung Küche 5.jpg}
+\SetCoverImage{../../media/Einrichtung Küche 1.jpg}
+\SetFooterLogo{../../media/Hausabbildung-removebg.png}
+
+\listoftodos % Liste der TODOs
+\todo[color=green]{Schnellanleitung für Profis mit nur Befehlen und Code-Snippets erstellen.}
+
+\input{chapter-titlepage.tex}\clearpage
+
+\tableofcontents\clearpage
+
+\input{einleitung.tex}\clearpage
+
+\input{chapter-modellbau.tex}\clearpage
+
+\input{chapter-zugange.tex}\clearpage
+
+\input{chapter-server-setup.tex}\clearpage
+
+\lstlistoflistings\clearpage
+
+\end{document}
