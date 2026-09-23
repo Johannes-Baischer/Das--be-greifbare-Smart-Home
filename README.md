@@ -15,7 +15,7 @@ Begleit-Repository zur Masterarbeit **"Das (be)greifbare Smart Home"** von Johan
   *Technischer Leitfaden zu Modellbau, Verkabelung, Server-Setup und Softwarekonfiguration.*
 
 - 📰 **Projektpräsentation:**
-[Projektpräsentation.pdf](_rohdaten/Das%20(be)greifbare%20Smart%20Home.marp.pdf)  
+  [Projektpräsentation.pdf](_rohdaten/Das%20(be)greifbare%20Smart%20Home.marp.pdf)  
   *Präsentation des Projekts, die im Rahmen der Masterarbeitsbegleitung gehalten wurde.*
 
 ---

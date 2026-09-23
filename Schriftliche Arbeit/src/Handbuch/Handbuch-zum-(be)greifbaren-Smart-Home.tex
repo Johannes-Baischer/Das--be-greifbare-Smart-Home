@@ -137,6 +137,7 @@
 }
 \makeatother
 
+
 % --- Eigene Umgebung für Hinweis-Boxen ---
 \newtcolorbox{InfoBox}[1]{
     enhanced,
@@ -331,31 +332,46 @@
 \author{Johannes Baischer}
 \date{\today}
 
-%---------------------------------------------------------------------
-%------------------------ Dokument -----------------------------------
-%---------------------------------------------------------------------
-\begin{document}
-
 % Layoutbilder setzen
 \SetCoverLogo{../../media/Einrichtung Küche 5.jpg}
 \SetCoverImage{../../media/Einrichtung Küche 1.jpg}
 \SetFooterLogo{../../media/Hausabbildung-removebg.png}
 
-\listoftodos % Liste der TODOs
-\todo[color=green]{Schnellanleitung für Profis mit nur Befehlen und Code-Snippets erstellen.}
+%---------------------------------------------------------------------
+%------------------------ Dokument -----------------------------------
+%---------------------------------------------------------------------
+\begin{document}
 
-\input{chapter-titlepage.tex}\clearpage
+    \input{titlepage.tex}\clearpage
 
-\tableofcontents\clearpage
+    \tableofcontents\clearpage
 
-\input{einleitung.tex}\clearpage
+    \listoftodos % Liste der TODOs
+    \todo[color=green]{Remove TODO List}
 
-\input{chapter-modellbau.tex}\clearpage
+    \input{einleitung.tex}\clearpage
 
-\input{chapter-zugange.tex}\clearpage
+    \input{chapter-quickstart.tex}\clearpage
 
-\input{chapter-server-setup.tex}\clearpage
+    \input{chapter-modellbau.tex}\clearpage
 
-\lstlistoflistings\clearpage
+    \input{chapter-zugange.tex}\clearpage
+
+    \input{chapter-server-setup.tex}\clearpage
+
+    \input{chapter-software-setup.tex}\clearpage
+
+    \input{chapter-modulverkabelung.tex}\clearpage
+
+    \input{chapter-ESP32-programme.tex}\clearpage
+
+    \pagenumbering{roman}
+
+    \input{anhang.tex}\clearpage
+
+    % Abbildungen, Tabellen und Listings
+    \listoffigures
+    \lstlistoflistings
+    \listoftables
 
 \end{document}

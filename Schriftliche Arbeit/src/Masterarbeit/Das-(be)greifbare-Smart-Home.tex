@@ -1,4 +1,4 @@
-\documentclass[12pt, parskip=half, bibliography=totocnumbered]{scrartcl}
+\documentclass[12pt, parskip=half, bibliography=totocnumbered, twoside]{scrreprt}
 
 %---------------------------------------------------------------------
 %PACKAGES
@@ -7,8 +7,8 @@
 \usepackage{fontspec} % für 
 \usepackage[T1]{fontenc} % für Umlaut-Kodierung
 \usepackage[ngerman]{babel} % für Silbentrennung
-\usepackage[utf8]{inputenc} % für Umlaute
 \usepackage{microtype} % für bessere Lesbarkeit
+\usepackage{setspace} % für den Zeilenabstand
 \usepackage{enumitem} % für Aufzählungen
 \usepackage[hidelinks]{hyperref} % für Hyperlinks 
 \usepackage{nameref} % für Referenzen
@@ -20,9 +20,12 @@
 \usepackage{marvosym} % für Symbole
 \usepackage[cache=false]{minted} % für Code-Highlighting
 \usepackage{listings} % für Code-Listings
+\usepackage{etoolbox} % für optionale Argumente in eigenen Befehlen
+\usepackage{accsupp} % für nicht-kopierbare Zeilennummern
 
 % Grafikpakete
 \usepackage{graphicx} % für Grafiken
+\usepackage{pdfpages} % für das eingebundene technische Handbuch
 \usepackage{xcolor} % für Farben
 \usepackage{tikz} % für Zeichnungen
 \usetikzlibrary{calc,positioning,shapes.geometric}
@@ -39,10 +42,24 @@
 \usepackage[most]{tcolorbox} % für farbige Boxen
 \usepackage{fancyhdr} % für Kopf- und Fußzeilen
 \usepackage{titlesec} % für Anpassungen an Überschriften
-\usepackage[a4paper,inner=28mm,outer=38mm,top=24mm,bottom=28mm,headsep=10mm,footskip=14mm,marginparwidth=30mm,marginparsep=6mm]{geometry} % für Seitenränder
+\usepackage[a4paper,top=25mm,bottom=20mm,left=25mm,right=25mm,headsep=8mm,footskip=12mm]{geometry} % für Seitenränder
 \usepackage{tabularx} % für Tabellen
 \usepackage{colortbl} % für farbige Tabellen
 
+% Typografie: Cambria bevorzugen, mit einem robusten Fallback.
+\defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\IfFontExistsTF{Cambria}{%
+    \setmainfont{Cambria}
+    \setsansfont{Cambria}
+}{%
+    \IfFontExistsTF{TeX Gyre Termes}{%
+        \setmainfont{TeX Gyre Termes}
+        \setsansfont{TeX Gyre Heros}
+    }{%
+        \setmainfont{Latin Modern Roman}
+        \setsansfont{Latin Modern Sans}
+    }%
+}
 % Eigene Befehle
 \newdateformat{monthyeardate}{%
   \monthname[\THEMONTH] \THEYEAR}
@@ -50,53 +67,100 @@
 \newdateformat{germandate}{%
   \THEDAY. \monthname[\THEMONTH] \THEYEAR}
 
-% Wrapper für Code-Highlighting mit Minted
-\newcommand{\code}[3]{
-    \begin{listing}[H]
-        \centering
-        \inputminted[fontsize=\footnotesize, linenos=true, frame=lines, framesep=2mm, framerule=0.5pt]{#1}{code/#2}
-        \caption{#3}
-        \label{lst:#3}
-    \end{listing}
+% --- tcolorbox-Unterstützung für Code-Listings ---
+\tcbuselibrary{listings}
+
+% --- Hilfsbefehl für nicht-kopierbare Zeilennummern ---
+\newcommand{\nocopy}[1]{%
+    \BeginAccSupp{ActualText={}}#1\EndAccSupp{}%
 }
 
-% Zentriertes Bild mit Bildunterschrift und Label
-\newcommand{\centerimage}[4]{
+\makeatletter
+% Monochromes Code-Listing nach dem Listing-Aufbau des Handbuchs.
+\newcommand{\CodeFile}[3][]{%
+    \refstepcounter{lstlisting}%
+    \ifblank{#1}{%
+        \protected@edef\@currentlabelname{Listing \thelstlisting}%
+    }{%
+        \addcontentsline{lol}{lstlisting}{\protect\numberline{\thelstlisting}#1}%
+        \protected@edef\@currentlabelname{#1}%
+    }%
+    \tcbinputlisting{%
+        listing file={#3},
+        listing options={
+            language=#2,
+            basicstyle=\ttfamily\small\color{black},
+            keywordstyle=\bfseries\color{black},
+            stringstyle=\color{black},
+            commentstyle=\itshape\color{black},
+            numbers=left,
+            numberstyle=\tiny\sffamily\color{black}\nocopy,
+            numbersep=12pt,
+            showstringspaces=false,
+            breaklines=true,
+            tabsize=2
+        },
+        listing only,
+        enhanced,
+        width=\linewidth-1.6cm,
+        enlarge left by=0.8cm,
+        arc=0pt,
+        outer arc=0pt,
+        colback=white,
+        colframe=black,
+        boxrule=0.5pt,
+        bottomrule=0.5pt,
+        left=2mm, right=4mm, top=2mm, bottom=2mm,
+        fonttitle=\sffamily\bfseries\footnotesize,
+        title={Listing~\thelstlisting\ifblank{#1}{}{: #1} \hfill \texttt{#2}},
+        after={\vspace{1.2em}},
+    }%
+    \ifblank{#1}{%
+        \protected@edef\@currentlabelname{Listing \thelstlisting}%
+    }{%
+        \protected@edef\@currentlabelname{#1}%
+    }%
+}
+\makeatother
+
+% Bildbefehl nach dem Handbuch-Aufbau, vollständig in Schwarzweiß.
+\newcommand{\KeyImage}[4][]{%
     \begin{figure}[H]
         \centering
-        \includegraphics[width=#2\textwidth]{#1}
+        \sbox0{%
+            \ifblank{#1}{%
+                \includegraphics[width=\dimexpr 0.86\textwidth\relax]{#4}%
+            }{%
+                \includegraphics[#1]{#4}%
+            }%
+        }%
+        \begin{tcolorbox}[
+            enhanced,
+            width=\dimexpr\wd0 + 8mm\relax,
+            colframe=black,
+            colback=white,
+            arc=0pt,
+            boxrule=0.5pt,
+            left=2mm, right=2mm, top=2mm, bottom=1.5mm,
+            nobeforeafter
+        ]
+            \centering
+            \usebox{0}%
+            \ifblank{#2}{}{%
+                \vspace{0.3em}
+                {\tiny\sffamily\color{black}Quelle: #2\par}%
+            }%
+        \end{tcolorbox}
         \caption{#3}
-        \label{fig:#4}
-    \end{figure}
+    \end{figure}%
 }
+
+% Rückwärtskompatible Kurzbefehle für bestehende Inhalte.
+\newcommand{\code}[3]{\CodeFile[#3]{#1}{code/#2}}
+\newcommand{\centerimage}[4]{\KeyImage[width=#2\textwidth]{}{#3}{#1}\label{fig:#4}}
 
 % Tabularx zentrierter Spaltentyp
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
-
-% Tabelle mit Colorbox
-\tcbset{tab1/.style={enhanced,fonttitle=\bfseries,fontupper=\normalsize\sffamily,
-colback=green!10!white,colframe=green!50!black,colbacktitle=green!40!white,
-coltitle=black,center title}}
-
-
-% Theorem Umgebungen mit Colorboxen definieren
-\newtcbtheorem[number within=section]{definition}{Definition}%
-{colback=blue!5!white,colframe=blue!55!white,fonttitle=\bfseries}{def}
-
-\newtcbtheorem[number within=section]{satz}{Satz}%
-{colback=blue!25!white,colframe=blue!90!black,fonttitle=\bfseries}{satz}
-
-\newtcbtheorem[no counter]{beweis}{Beweis}%
-{colback=blue!10!white,colframe=blue!30!black,fonttitle=\bfseries}{beweis}
-
-\newtcbtheorem[no counter]{bemerkung}{Bemerkung}%
-{colback=yellow!5!white,colframe=yellow!75!black,fonttitle=\bfseries}{bem}
-
-\newtcbtheorem[no counter]{beispiel}{Beispiel}%
-{colback=purple!5!white,colframe=purple!50!black,fonttitle=\bfseries}{bsp}
-
-\newtcbtheorem[number within=section]{algorithmus}{Algorithmus}%
-{colback=purple!10!white,colframe=purple!80!black,fonttitle=\bfseries}{alg}
 
 % Titelinformationen
 \title{Thema}
@@ -108,183 +172,93 @@ coltitle=black,center title}}
 \addbibresource{../referenzen.bib}
 \addbibresource{../abbildungen.bib}
 
-% Layout Einstellungen
-\AddToHook{cmd/section/before}{\clearpage} % Neue Seite bei jedem Abschnitt
-\titleformat{\section}
-  {\normalfont\Large\bfseries}{\thesection}{1em}{}[{\titlerule[1.6pt]}] % Anpassung der Überschriften
-\titleformat{\subsection}
-  {\normalfont\large\bfseries}{\thesubsection}{1em}{}[{\titlerule[0.4pt]}] % Anpassung der Unterüberschriften
-\titleformat{\subsubsection}
-  {\normalfont\normalsize\bfseries\center}{\thesubsubsection}{1em}{} % Anpassung der Unterunterüberschriften
+% Layout-Einstellungen
+\onehalfspacing
+\setlength{\headheight}{15pt}
 
-% Code Highlighting Einstellungen
-\usemintedstyle{vs}
-\lstloadlanguages{csh}
-\renewcommand\listingscaption{Listing}
-\renewcommand\listoflistingscaption{Code Listings}
+\titleformat{\section}
+    {\normalfont\fontsize{14}{17}\selectfont\bfseries}{\thesection}{1em}{} % Schlichte Abschnittsüberschrift
+\titleformat{\subsection}
+    {\normalfont\fontsize{13}{16}\selectfont\bfseries}{\thesubsection}{1em}{} % Schlichte Unterabschnittsüberschrift
+\titleformat{\subsubsection}
+    {\normalfont\fontsize{12}{15}\selectfont\bfseries}{\thesubsubsection}{1em}{} % Schlichte Unterunterabschnittsüberschrift
+
+\titleformat{\chapter}[hang]
+    {\normalfont\bfseries}
+    {\fontsize{18}{22}\selectfont\thechapter}
+    {0.4em}
+    {\fontsize{18}{22}\selectfont}
+    [\vspace{0.4ex}\titlerule]
+\titlespacing*{\chapter}{0pt}{0pt}{1.5em}
 
 %---------------------------------------------------------------------
 %------------------------ TITLE PAGE ---------------------------------
 %---------------------------------------------------------------------
 
 \begin{document}
-\begin{titlepage}
-    \begin{center}
-        \textbf{\Huge Das (be)greifbare Smart Home\\}
-        \textbf{\large Konzeption und Konstruktion einer modularen 12V-IoT-Lernumgebung für die Digitale Grundbildung\\}
-        \vspace{3cm}
-        \textbf{\LARGE MASTERARBEIT\\}
-        \vspace{0.5cm}
-        {\large zur Erlangung des Mastergrades\\Master of Education MEd\\}
-        \vspace{1cm}
-        {\large an der Paris-Lodron-Universität Salzburg\\School of Education}
-        \vspace{1cm}
+
+    \input{titelpage.tex}\clearpage
+
+    \pagenumbering{Roman}
+    \setcounter{page}{1}
+    \tableofcontents
+
+    %---------------------------------------------------------------------
+    %------------------------ Fragen und TODOs ---------------------------
+    %---------------------------------------------------------------------
+    \listoftodos % Liste der TODOs
+    \todo[color=green]{Remove TODO List}
+    \vspace{2cm}
+    \begin{tcolorbox}[title=Mögliche Ergänzungen und Fragen, colback=orange!5!white, colframe=orange!75!black]
+
+        \begin{itemize}
+            \item Aufbau der Arbeit wirklich nur grob strukturiert und absolut nicht final
+        \end{itemize}
         
-        {\large Gutachterin: Mag. Corinna Hörmann, PhD\\}
-        {\large Unterrichtsfach der Masterarbeit:\\ Informatik und Digitale Grundbildung}
+    \end{tcolorbox}
 
+    \input{vorwort.tex}\clearpage
 
-        \vspace{3cm}
-        \textbf{eingereicht von\\ \textsc{\LARGE \@author } \\}
-        \vfill
-        {\Large Salzburg, \monthyeardate\today}
-    \end{center}
-\end{titlepage}
+    \input{zusammenfassung.tex}\clearpage
 
-\pagestyle{empty}   % Keine Kopf- und Fußzeilen auf dieser Seite
-\pagenumbering{Roman}
-\setcounter{page}{1}
-\tableofcontents
+    \input{abstract.tex}\clearpage
 
-\listoftodos % Liste der TODOs
-\todo[color=green]{Remove TODO List}
+        % Kopf- und Fußzeilen Einstellungen (fancyhdr)
+        \pagestyle{fancy}
+        \fancyhf{}  % Löschen der Standard Kopf- und Fußzeilen
+        \lhead{\small Johannes Baischer, BEd.}
+        \rhead{\small\nouppercase{\rightmark}}
+        \cfoot{\thepage}
+        \renewcommand{\headrulewidth}{0.4pt}
+        \renewcommand{\footrulewidth}{0pt} % Keine Trennlinie unten
+        \makeatother %erstellt Author und Titel Variable
 
-\vspace{2cm}
+    \pagenumbering{arabic}
+    \setcounter{page}{1}
 
-%---------------------------------------------------------------------
-%------------------------ Fragen -------------------------------------
-%---------------------------------------------------------------------
+    \input{chapter-einleitung.tex}\clearpage
 
-\begin{tcolorbox}[title=Mögliche Ergänzungen, colback=orange!5!white, colframe=orange!75!black]
+    \input{chapter-fachdidaktischer-rahmen.tex}\clearpage
 
-     \begin{itemize}
-         \item ...
-     \end{itemize}
-    
-\end{tcolorbox}
+    \input{chapter-didaktisches-design.tex}\clearpage
 
+    \input{chapter-unterrichtsszenarien.tex}\clearpage
 
+    \input{chapter-reflexion-limitationen.tex}\clearpage
 
-% Kopf- und Fußzeilen Einstellungen (fancyhdr)
-\pagestyle{fancy}
-\fancyhf{}  % Löschen der Standard Kopf- und Fußzeilen
-\lhead{\@author}
-\rhead{\nouppercase{\rightmark}}
-\rfoot{\thepage}
-\renewcommand{\headrulewidth}{0pt} % Keine Trennlinie oben (entspricht KOMA-Standard)
-\renewcommand{\footrulewidth}{0pt} % Keine Trennlinie unten
+    \input{chapter-vergleich-iot-lernumgebungen.tex}\clearpage
 
-\makeatother %erstellt Author und Titel Variable
-%---------------------------------------------------------------------
+    \input{chapter-fazit-ausblick.tex}\clearpage
 
-%---------------------------------------------------------------------
-%------------------------ EINLEITUNG ---------------------------------
-%---------------------------------------------------------------------
+    % Abbildungen, Tabellen und Listings
+    \pagenumbering{roman}
+    \listoffigures
+    \lstlistoflistings
+    \listoftables
 
-\section{Vorwort}\label{sec:Vorwort}
+    % Literaturverzeichnis mit Bibtex
+    \printbibliography[heading=bibintoc]
 
-\pagestyle{fancy}
-
-\vfill
-
-\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
-
-    {} & {
-        ...
-    } & {}\\
-
-    \vspace{2\baselineskip}\\
-
-    {} & {
-        Johannes Baischer
-
-        Salzburg, \germandate\today
-    } & {}\\
-
-    \vspace{2\baselineskip}\\
-
-    {} & {
-        \textbf{(\textit{..., ..., ..., ..., ...})}
-    } & {}
-
-\end{tabularx}
-
-\vfill
-
-\section{Abstract}\label{sec:Abstract}
-
-\vfill
-
-\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
-
-    {} & {
-        ...
-    } & {}\\
-
-    \vspace{2\baselineskip}\\
-
-    {} & {
-        ...
-    } & {}\\
-
-\end{tabularx}
-
-\vfill
-
-%---------------------------------------------------------------------
-%------------------------ HAUPTTEIL ----------------------------------
-%---------------------------------------------------------------------
-
-\section{...}\label{sec:...}
-\pagestyle{fancy} % Kopf- und Fußzeilen Einstellungen ab hier
-\pagenumbering{arabic} 
-\setcounter{page}{1}
-
-...
-
-    \subsection{...}\label{subsec:...}
-    % \ref{sec:client-side} \textit{\nameref{sec:client-side}}
-    % \centerimage{img/Blazor-WebAssembly-erstellen.jpg}{0.9}{Erstellen der WebAssembly-App}{blazor-webassembly-erstellen}
-    % \code{csharp}{serverstartup-builder.cs}{Startup-Logik (Server): program.cs 1/2}
-    % \enquote{Claims}
-
-%---------------------------------------------------------------------
-
-%---------------------------------------------------------------------
-\section{Fazit}\label{sec:fazit}
-
-\vfill
-
-\begin{tabularx}{1\textwidth}{ p{1 cm} X p{1 cm} }
-
-    {} & {
-        ...    
-    } & {}\\
-
-\end{tabularx}
-
-\vfill
-
-%---------------------------------------------------------------------
-
-% Abbildungen, Tabellen und Listings
-\clearpage
-\pagenumbering{roman}
-\listoffigures
-\listoflistings
-\listoftables
-
-% Literaturverzeichnis mit Bibtex
-\printbibliography[heading=bibintoc]
+    \input{anhang.tex}\clearpage
 
 \end{document}

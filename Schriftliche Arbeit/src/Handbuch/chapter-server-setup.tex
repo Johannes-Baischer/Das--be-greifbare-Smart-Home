@@ -100,8 +100,6 @@ Falls es sich beim Servergerät um einen Laptop handelt, müssen die systemweite
 
 \CodeFile[Energieoptionen für Laptop-Server]{bash}{code/energieoptionen.sh}\label{lst:energieoptionen}
 
-\todo[color=green]{Hier kontrollieren}
-
 Die Anpassung erfolgt wie in Listing~\ref{lst:energieoptionen} (\nameref{lst:energieoptionen}) in zwei Schritten:
 
 \begin{enumerate}
@@ -112,7 +110,7 @@ Die Anpassung erfolgt wie in Listing~\ref{lst:energieoptionen} (\nameref{lst:ene
         \item \texttt{HandleLidSwitchExternalPower=ignore}
         \item \texttt{HandleLidSwitchDocked=ignore}
     \end{itemize}
-    Speichere die Datei (\texttt{Strg+O}, \texttt{Enter}, \texttt{Strg+X}) und starte den Dienst mit \texttt{sudo systemctl restart systemd-logind} neu (\textit{kann die Session kurz unterbrechen}).
+    Speichere die Datei (\texttt{Strg+O}, \texttt{Enter}, \texttt{Strg+X}) und starte den Dienst mit \texttt{sudo systemctl restart systemd-logind} neu (\textit{kann die Session ggf. kurz unterbrechen}).
 
     \item \textbf{Systemweiten Standby und Ruhezustand komplett deaktivieren:}\\
     Da der Laptop dauerhaft als Server betrieben wird, werden sämtliche Energiespar-Targets auf Systemebene blockiert:
@@ -128,55 +126,88 @@ Die Anpassung erfolgt wie in Listing~\ref{lst:energieoptionen} (\nameref{lst:ene
 
 \section{Docker Installation}
 
-Docker erlaubt die zentrale Ausführung von Services in isolierten Containern. Für das Smart-Home-Setup ist diese Struktur sinnvoll, weil damit Home Assistant und andere Dienste sauber voneinander getrennt laufen können.
+Docker stellt eine Container-Laufzeitumgebung bereit, in der Home Assistant und weitere Dienste voneinander getrennt ausgeführt werden können. Für dieses Handbuch wird die Docker Engine direkt auf Xubuntu installiert. Docker Desktop ist für diesen Serveraufbau nicht vorgesehen, da es eine eigene Desktop-Umgebung voraussetzt.
+
+\begin{InfoBox}{Voraussetzung für die Containerumgebung}
+    \scriptsize Verwende eine Docker Engine ab Version 23.0.0. Die Installation erfolgt über die Xubuntu-Paketverwaltung und umfasst Docker Compose v2. Die benötigte Version kann nach der Installation mit \texttt{docker --version} geprüft werden.
+\end{InfoBox}
 
 \begin{enumerate}
-    \item Installiere die Docker-Engine und Docker Compose auf dem Xubuntu-System.
-    \item Aktiviere Docker automatisch beim Systemstart.
-    \item Ergänze den aktuellen Benutzer in der Docker-Gruppe, damit Containerbefehle ohne Administratorrechte laufen.
+    \item Aktualisiere zunächst die Paketquellen und installiere die Docker Engine gemeinsam mit Docker Compose v2.
+    \item Aktiviere den Docker-Dienst, damit er direkt gestartet wird und künftig automatisch mit dem System hochläuft.
+    \item Ergänze den aktuell angemeldeten Benutzer in der Docker-Gruppe. Dadurch können Containerbefehle später ohne \texttt{sudo} ausgeführt werden.
 \end{enumerate}
 
 \CodeFile[Installation von Docker Engine und Docker Compose]{bash}{code/docker-install.sh}\label{lst:docker-install}
 
+\begin{InfoBox}{Änderung der Gruppenrechte übernehmen}
+    \scriptsize Die neue Gruppenzugehörigkeit wird erst nach einer erneuten Anmeldung wirksam. Melde dich deshalb nach der Installation einmal ab und wieder an. Anschließend lässt sich die Installation beispielsweise mit \texttt{docker run hello-world} überprüfen.
+\end{InfoBox}
 
 \section{Router Setup und Netzstruktur}
 
-Die zentrale Idee des Netzwerkaufbaus ist einfach: Der Xubuntu-Server übernimmt die Internetverbindung per WLAN und verteilt sie über das lokale LAN an die Lernumgebung. Der A1-Router dient dabei nicht als DHCP-Server, sondern nur noch als reiner Netzwerkerweiterer.
+Das Projekt-Netzwerk wird bewusst vom übrigen Netzwerk getrennt. Der Xubuntu-Server übernimmt dabei die Funktion des Gateways. Er bezieht den Internetzugang über WLAN und stellt über seine Ethernet-Schnittstelle ein eigenes lokales Netz bereit. Der verwendete A1-Router wird nicht mehr als Router oder DHCP-Server eingesetzt, sondern dient nur noch als Switch und Access Point.
+
+\Sidebar{Aufbau des Projekt-Netzes}
+Der Xubuntu-Server verbindet zwei Netze miteinander. Über WLAN erreicht er das Internet, über die Ethernet-Schnittstelle stellt er das lokale Netz \texttt{10.0.0.0/24} bereit. Die Adresse \texttt{10.0.0.1} ist dabei das Gateway für die angeschlossenen Geräte und gleichzeitig die Adresse des Servers selbst.
+
+\subsection{A1-Router vorbereiten}
+
+Bevor der Router mit dem Server verbunden wird, muss sein eigener Netzwerkdienst deaktiviert werden. Andernfalls könnten der Router und der Xubuntu-Server gleichzeitig IP-Adressen vergeben und es käme zu Konflikten.
 
 \begin{enumerate}
-    \item Verbinde den Xubuntu-Server über WLAN mit dem Internet und prüfe die Verbindung.
-    \item Öffne das Router-Interface unter \texttt{10.0.0.138} und deaktiviere dort den DHCP-Server sowie mögliche feste IP-Reservierungen.
-    \item Weise der Ethernet-Verbindung des Laptops eine feste lokale Adresse zu: \texttt{10.0.0.1/24}.
-    \item Starte die Verbindung neu und prüfe mit \texttt{ip a}, ob die Ethernet-Schnittstelle nun die neue IP zeigt.
-    \item Schließe den Server per LAN an den A1-Router an und nutze so das isolierte Projekt-Netz.
-    \item Starte die Endgeräte neu, damit sie den neuen DHCP-Server aus dem Xubuntu-Laptop übernehmen.
+    \item Verbinde einen Rechner mit dem A1-Router und öffne dessen Weboberfläche unter \texttt{10.0.0.138}. \Sidebar{Abweichung je nach Hersteller}
+    \item Deaktiviere den DHCP-Server im Bereich für das Heimnetzwerk bzw. LAN.
+    \item Entferne vorhandene statische IP-Bindungen oder Reservierungen.
+    \item Belasse die Routeradresse bei \texttt{10.0.0.138}. Sie liegt damit weiterhin im später verwendeten lokalen Subnetz und bleibt erreichbar.
 \end{enumerate}
 
-\CodeFile[Internet-Sharing und lokales Subnetz auf dem Xubuntu-Host]{bash}{code/router-network-share.sh}
+\subsection{Internetfreigabe auf dem Xubuntu-Server}
+
+Verbinde den Server zunächst über WLAN mit dem Internet. Für die Ethernet-Verbindung wird anschließend der NetworkManager-Modus \textit{shared} verwendet. In diesem Modus übernimmt der Xubuntu-Server die lokale Adressvergabe und stellt den angeschlossenen Geräten den eigenen Internetzugang über die WLAN-Verbindung bereit.
+
+\CodeFile[Internet-Sharing und lokales Subnetz auf dem Xubuntu-Host]{bash}{code/router-network-share.sh}\label{lst:router-network-share}
+
+Die Befehle im Listing~\ref{lst:router-network-share} führen die Konfiguration in vier Schritten durch:
+
+\begin{enumerate}
+    \item Mit \texttt{nmcli connection show} wird der Name der Ethernet-Verbindung ermittelt. Je nach Installation kann er beispielsweise \texttt{Wired connection 1} lauten.
+    \item Die Verbindung erhält die Adresse \texttt{10.0.0.1/24} und wird in den gemeinsamen NetworkManager-Modus versetzt.
+    \item Durch das erneute Starten der Verbindung werden die Änderungen übernommen.
+    \item Mit \texttt{ip a} wird geprüft, ob die Ethernet-Schnittstelle die Adresse \texttt{10.0.0.1} verwendet.
+\end{enumerate}
+
+\begin{InfoBox}{Geräte mit dem Projekt-Netz verbinden}
+    \scriptsize Verbinde den Server per LAN mit LAN-Port 1 des A1-Routers und verbinde danach die Smart-Home-Geräte per WLAN mit dem Router. Starte die Endgeräte anschließend neu, damit sie ihre Adresse vom Xubuntu-Server beziehen. Home Assistant ist nach erfolgreicher Installation (siehe Kapitel~\ref{chap:software-setup} \textit{\nameref{chap:software-setup}}) im lokalen Netz über \texttt{http://10.0.0.1:8123} erreichbar.
+\end{InfoBox}
 
 \section{Tailscale für Fernzugriff}
 
-Tailscale schafft eine sichere VPN-Verbindung über eine virtuelle Overlay-Netzstruktur. Dadurch kannst du auch von außerhalb des Schulnetzes auf die Smart-Home-Oberfläche zugreifen, ohne explizit Ports im Netzwerk zu öffnen.
+Das lokale Projekt-Netz ist absichtlich nicht direkt aus dem Internet erreichbar. Für die Fernwartung wird deshalb Tailscale als Overlay-Netzwerk eingesetzt. Damit kann ein autorisiertes Privatgerät eine verschlüsselte Verbindung zum Xubuntu-Server herstellen, ohne Ports im Schul- oder Heimnetz des Routers freigeben zu müssen, was aufgrund von Sicherheitsrichtlinien oft ohnehin nicht möglich ist.
+
+\KeyImage[]{Screenshot}{Tailscale herunterladen}{../../media/Tailscale Download.png}
 
 \begin{enumerate}
-    \item Installiere Tailscale auf dem Xubuntu-Server.
-    \item Starte Tailscale und authentifiziere den Server im eigenen Konto.
-    \item Installiere Tailscale auch auf dem privaten Rechner oder Smartphone.
-    \item Verbinde beide Geräte im selben Tailscale-Account und rufe dann die Tailscale-IP des Servers auf.
+    \item Installiere Tailscale auf dem Xubuntu-Server und starte anschließend die Anmeldung.
+    \item Öffne den im Terminal ausgegebenen Link und authentifiziere den Server im vorgesehenen Tailscale-Konto.
+    \item Installiere Tailscale zusätzlich auf dem privaten Laptop oder Smartphone und melde auch dieses Gerät im selben Konto an.
+    \item Ermittle die Tailscale-IP des Xubuntu-Servers und rufe Home Assistant (nach erfolgreicher Anmeldung) über diese Adresse und den Port \texttt{8123} auf.
 \end{enumerate}
 
 \CodeFile[Installation und Anmeldung von Tailscale auf dem Server]{bash}{code/tailscale-install.sh}
 
-\section{Prüfcheckliste vor der Präsentation}
+Die Anmeldung und der Verbindungsstatus können anschließend über die Tailscale-Oberfläche bzw. mit \texttt{tailscale status} kontrolliert werden. Die konkrete Tailscale-IP ist kontospezifisch und kann sich ändern, sollte daher nicht fest in irgendwelchen Konfigurationen hinterlegt werden.
 
-\begin{itemize}[leftmargin=1.3em,label=\textcolor{SmartTeal}{\small\textbullet}]
-    \item Internetzugang über WLAN ist vorhanden.
-    \item Die lokale Ethernet-Verbindung zeigt die Adresse \texttt{10.0.0.1}.
-    \item Der DHCP-Server des A1-Routers ist deaktiviert.
-    \item Home Assistant ist über \texttt{10.0.0.1:8123} erreichbar.
-    \item Der Fernzugriff über Tailscale funktioniert ebenfalls außerhalb des Netzwerks.
-\end{itemize}
+\KeyImage[width=0.8\textwidth]{Screenshot}{Tailscale Pricing}{../../media/Tailscale Config 4.png}
 
-\section{Zusammenfassung}
+\subsection{Technische Funktionsweise und Datenschutz}
 
-Die Server-Infrastruktur verbindet drei Ebenen: Internetzugang, lokales Lernnetz und sichere Fernwartung. Sobald Xubuntu, SSH, Docker, Router-Setup und Tailscale korrekt eingerichtet sind, entsteht eine stabile Grundlage für alle Smart-Home-Experimente im Unterricht.
+Tailscale verwendet das WireGuard-Protokoll für die verschlüsselte Kommunikation zwischen den angemeldeten Geräten. Die zentrale Steuerungsebene vermittelt Identitäten, öffentliche Schlüssel und Verbindungsinformationen. Die Nutzdaten werden nach Möglichkeit direkt zwischen den Endgeräten übertragen. \Sidebar{Ende-zu-Ende verschlüsselt}
+
+\begin{InfoBox}{Direkte Verbindung und Relay-Fallback}
+    \scriptsize Für den Verbindungsaufbau versucht Tailscale zunächst, eine direkte Verbindung durch NAT-Traversal herzustellen. Wenn die beteiligten Netzwerke dies nicht zulassen, kann ein verschlüsselter DERP-Relay als Vermittler verwendet werden. Auch in diesem Fall bleibt der eigentliche Datenverkehr Ende-zu-Ende verschlüsselt.
+\end{InfoBox}
+
+Die privaten Schlüssel verbleiben auf den jeweiligen Endgeräten. Der Tailscale-Koordinationsdienst verwaltet daher die für den Verbindungsaufbau notwendigen Metadaten, kann den verschlüsselten Nutzdatenstrom jedoch nicht entschlüsseln. Der Zugriff auf Home Assistant ist zusätzlich auf Geräte beschränkt, die im eigenen Tailscale-Netz autorisiert wurden.
+
+Standardmäßig wird dabei kein vollständiger Internetverkehr durch den VPN-Tunnel geleitet. Für dieses Projekt ist nur der Zugriff auf den Server und gegebenenfalls auf das Projekt-Netz erforderlich.
