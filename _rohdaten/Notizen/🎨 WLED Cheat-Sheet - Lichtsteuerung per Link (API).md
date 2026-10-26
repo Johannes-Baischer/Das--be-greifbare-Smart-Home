@@ -1,3 +1,7 @@
+---
+feature: Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/WLED Cheat-Sheet - Lichtsteuerung per Link (API)+Wifi Setup.png
+thumbnail: thumbnails/resized/3f564982f7563ef346117994ec094161_b89e22fb.jpg
+---
 Mit der **WLED-API** kannst du deine LED-Streifen ganz einfach steuern, indem du eine bestimmte Webadresse (URL) in den Browser eingibst. Das ist wie Geheimbefehle an das Haus schicken!
 
 ---
@@ -5,13 +9,15 @@ Mit der **WLED-API** kannst du deine LED-Streifen ganz einfach steuern, indem du
 # 🌐 Das Setup
 
 1. **Verbinde dein Programm mit dem Smart-Home-Wifi:**  
-	 - **"Comms"** -> "connect to Wifi"
+	 - **"Kommunikation"** -> "mit WLAN verbinden"
 	 - *network name:* `MMSE-Smart-Home-Wifi`
 	 - *password:* `***`
+![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/WLED Cheat-Sheet - Lichtsteuerung per Link (API)+Wifi Setup.png]]
+
 
 # 🧭 Das Grundprinzip (Wie sieht der Befehl aus?)
 
-Jeder Befehl beginnt mit der **IP-Adresse** des Servers (`10.0.0.1`), gefolgt von der IP des WLED Controllers deines Moduls, gefolgt von `/win&`. Dahinter hängst du deine Wünsche an.
+Jeder Befehl beginnt mit der **IP-Adresse** des Servers (`10.0.0.1:3000`), gefolgt von der IP des WLED Controllers deines Moduls, gefolgt von `/win&`. Dahinter hängst du deine Wünsche an.
 
 * **Die Basis-Adresse für Modul X:** `10.0.0.1:3000/10.0.0.X5/win&`
 * **Beispiel für Modul 2:** Wenn du bei Modul 2 die Helligkeit auf das Maximum stellen willst, tippst du in die Browser-Zeile:
@@ -19,7 +25,8 @@ Jeder Befehl beginnt mit der **IP-Adresse** des Servers (`10.0.0.1`), gefolgt vo
 
 > [!TIP]
 > Du kannst auch **mehrere Befehle verketten**, indem du sie mit einem **`&`** verbindest!
-> *Beispiel:* `10.0.0.1/10.0.0.25/win&A=128&FX=0` (Setzt Helligkeit auf die Hälfte UND macht das Licht dauerhaft an).
+> *Beispiel:* `10.0.0.1:3000/10.0.0.25/win&A=128&FX=0` (Setzt Helligkeit auf die Hälfte UND macht das Licht dauerhaft an).
+> ![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/WLED Cheat-Sheet - Lichtsteuerung per Link (API)+WLED Aufruf Beispiel.png]]
 
 ---
 

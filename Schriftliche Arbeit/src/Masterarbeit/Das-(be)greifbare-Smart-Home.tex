@@ -192,7 +192,7 @@
 \titlespacing*{\chapter}{0pt}{0pt}{1.5em}
 
 %---------------------------------------------------------------------
-%------------------------ TITLE PAGE ---------------------------------
+%-------------------------- Dokument ---------------------------------
 %---------------------------------------------------------------------
 
 \begin{document}
@@ -203,19 +203,16 @@
     \setcounter{page}{1}
     \tableofcontents
 
-    %---------------------------------------------------------------------
-    %------------------------ Fragen und TODOs ---------------------------
-    %---------------------------------------------------------------------
-    \listoftodos % Liste der TODOs
-    \todo[color=green]{Remove TODO List}
-    \vspace{2cm}
-    \begin{tcolorbox}[title=Mögliche Ergänzungen und Fragen, colback=orange!5!white, colframe=orange!75!black]
+        \listoftodos % Liste der TODOs
+        \todo[color=green]{Remove TODO List}
+        \vspace{2cm}
+        \begin{tcolorbox}[title=Mögliche Ergänzungen und Fragen, colback=orange!5!white, colframe=orange!75!black]
 
-        \begin{itemize}
-            \item Aufbau der Arbeit wirklich nur grob strukturiert und absolut nicht final
-        \end{itemize}
-        
-    \end{tcolorbox}
+            \begin{itemize}
+                \item Aufbau der Arbeit wirklich nur grob strukturiert und absolut nicht final
+            \end{itemize}
+            
+        \end{tcolorbox}
 
     \input{vorwort.tex}\clearpage
 
@@ -233,8 +230,8 @@
         \renewcommand{\footrulewidth}{0pt} % Keine Trennlinie unten
         \makeatother %erstellt Author und Titel Variable
 
-    \pagenumbering{arabic}
-    \setcounter{page}{1}
+        \pagenumbering{arabic}
+        \setcounter{page}{1}
 
     \input{chapter-einleitung.tex}\clearpage
 
@@ -250,11 +247,13 @@
 
     \input{chapter-fazit-ausblick.tex}\clearpage
 
-    % Abbildungen, Tabellen und Listings
-    \pagenumbering{roman}
-    \listoffigures
-    \lstlistoflistings
-    \listoftables
+    \input{ki-hinweis.tex}\clearpage
+
+        % Abbildungen, Tabellen und Listings
+        \pagenumbering{roman}
+        \listoffigures
+        \lstlistoflistings
+        \listoftables
 
     % Literaturverzeichnis mit Bibtex
     \printbibliography[heading=bibintoc]
