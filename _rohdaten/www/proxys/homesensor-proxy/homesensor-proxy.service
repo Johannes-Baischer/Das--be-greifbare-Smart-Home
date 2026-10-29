@@ -1,0 +1,21 @@
+[Unit]
+Description=Homesensor Proxy Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/proxys/homesensor-proxy
+ExecStart=/usr/bin/node /var/www/proxys/homesensor-proxy/server.js
+Restart=always
+RestartSec=5
+
+User=proxyserver
+Group=proxyserver
+
+Environment=NODE_ENV=production
+Environment=PORT=3000
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

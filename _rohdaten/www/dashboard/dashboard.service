@@ -1,0 +1,13 @@
+[Unit]
+Description=Node.js Dashboard Server
+After=network.target
+
+[Service]
+User=proxyserver
+WorkingDirectory=/var/www/dashboard
+ExecStart=/usr/bin/node server.js
+Restart=always
+# Automatisches Neustrarten bei Absturz
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Home Server</title>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* Reset & Base Settings */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0f172a;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(236, 72, 153, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: #f8fafc;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Glassmorphism Common Style */
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    /* Top Highlight Card (Dashboard) */
+    .dashboard-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      text-decoration: none;
+      color: inherit;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(139, 92, 246, 0.15));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .dashboard-banner:hover {
+      transform: translateY(-2px);
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 12px 40px rgba(56, 189, 248, 0.25);
+    }
+
+    .dashboard-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .dashboard-icon {
+      font-size: 1.8rem;
+      color: #38bdf8;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+    }
+
+    .dashboard-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .dashboard-subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .ip-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      font-family: monospace;
+    }
+
+    /* Room Sections */
+    .room-section {
+      padding: 16px;
+    }
+
+    .room-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Grid for Device Cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    /* Device Card Styles */
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 12px;
+      text-decoration: none;
+      color: #f8fafc;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: all 0.2s ease;
+      text-align: center;
+      min-height: 105px;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-3px);
+    }
+
+    .card i {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #38bdf8;
+    }
+
+    .card .name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .card .ip {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    /* Specific Icon Accent Colors */
+    .icon-light { color: #facc15 !important; }
+    .icon-wled { color: #ec4899 !important; }
+    .icon-speaker { color: #a855f7 !important; }
+    .icon-shutter-up { color: #4ade80 !important; }
+    .icon-shutter-down { color: #f87171 !important; }
+    .icon-fan { color: #38bdf8 !important; }
+
+    /* Disabled / Unassigned Card */
+    .card.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+      border-style: dashed;
+    }
+
+    .card.disabled i {
+      color: #64748b !important;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .dashboard-banner {
+        padding: 14px 16px;
+      }
+      .dashboard-subtitle {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Haus-übergreifendes Sensor Dashboard -->
+    <a href="http://10.0.0.1/sensor-simulation" class="glass dashboard-banner">
+      <div class="dashboard-info">
+        <div class="dashboard-icon">
+          <i class="fa-solid fa-microchip"></i>
+        </div>
+        <div>
+          <div class="dashboard-title">Sensoren & Simulation</div>
+          <div class="dashboard-subtitle">Hausübergreifende Sensorwerte festlegen & steuern</div>
+        </div>
+      </div>
+      <span class="ip-badge">10.0.0.1/sensor-simulation</span>
+    </a>
+
+    <!-- Raum 1: Serverraum -->
+    <div class="glass room-section">
+      <div class="room-title">
+        <i class="fa-solid fa-server"></i> Serverraum
+      </div>
+      <div class="grid">
+        <a href="http://10.0.0.11" class="card">
+          <i class="fa-solid fa-volume-high icon-speaker"></i>
+          <span class="name">Lautsprecher</span>
+          <span class="ip">10.0.0.11</span>
+        </a>
+
+        <a href="http://10.0.0.12" class="card">
+          <i class="fa-solid fa-lightbulb icon-light"></i>
+          <span class="name">Licht Raum</span>
+          <span class="ip">10.0.0.12</span>
+        </a>
+
+        <!-- Nicht belegt -->
+        <div class="card disabled">
+          <i class="fa-solid fa-plug-circle-xmark"></i>
+          <span class="name">Frei / Unbelegt</span>
+          <span class="ip">10.0.0.13</span>
+        </div>
+
+        <a href="http://10.0.0.14" class="card">
+          <i class="fa-solid fa-microchip icon-light"></i>
+          <span class="name">Licht Elektronik</span>
+          <span class="ip">10.0.0.14</span>
+        </a>
+
+        <a href="http://10.0.0.15" class="card">
+          <i class="fa-solid fa-wand-magic-sparkles icon-wled"></i>
+          <span class="name">WLED Controller</span>
+          <span class="ip">10.0.0.15</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Modul 2 -->
+    <div class="glass room-section">
+      <div class="room-title">
+        <i class="fa-solid fa-cubes"></i> Modul 2
+      </div>
+      <div class="grid">
+        <a href="http://10.0.0.21" class="card">
+          <i class="fa-solid fa-circle-chevron-up icon-shutter-up"></i>
+          <span class="name">Rollladen Rauf</span>
+          <span class="ip">10.0.0.21</span>
+        </a>
+        <a href="http://10.0.0.22" class="card">
+          <i class="fa-solid fa-circle-chevron-down icon-shutter-down"></i>
+          <span class="name">Rollladen Runter</span>
+          <span class="ip">10.0.0.22</span>
+        </a>
+        <a href="http://10.0.0.23" class="card">
+          <i class="fa-solid fa-fan icon-fan"></i>
+          <span class="name">Lüfter</span>
+          <span class="ip">10.0.0.23</span>
+        </a>
+        <a href="http://10.0.0.24" class="card">
+          <i class="fa-solid fa-lightbulb icon-light"></i>
+          <span class="name">Licht</span>
+          <span class="ip">10.0.0.24</span>
+        </a>
+        <a href="http://10.0.0.25" class="card">
+          <i class="fa-solid fa-wand-magic-sparkles icon-wled"></i>
+          <span class="name">WLED Controller</span>
+          <span class="ip">10.0.0.25</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Modul 3 -->
+    <div class="glass room-section">
+      <div class="room-title">
+        <i class="fa-solid fa-cubes"></i> Modul 3
+      </div>
+      <div class="grid">
+        <a href="http://10.0.0.31" class="card">
+          <i class="fa-solid fa-circle-chevron-up icon-shutter-up"></i>
+          <span class="name">Rollladen Rauf</span>
+          <span class="ip">10.0.0.31</span>
+        </a>
+        <a href="http://10.0.0.32" class="card">
+          <i class="fa-solid fa-circle-chevron-down icon-shutter-down"></i>
+          <span class="name">Rollladen Runter</span>
+          <span class="ip">10.0.0.32</span>
+        </a>
+        <a href="http://10.0.0.33" class="card">
+          <i class="fa-solid fa-fan icon-fan"></i>
+          <span class="name">Lüfter</span>
+          <span class="ip">10.0.0.33</span>
+        </a>
+        <a href="http://10.0.0.34" class="card">
+          <i class="fa-solid fa-lightbulb icon-light"></i>
+          <span class="name">Licht</span>
+          <span class="ip">10.0.0.34</span>
+        </a>
+        <a href="http://10.0.0.35" class="card">
+          <i class="fa-solid fa-wand-magic-sparkles icon-wled"></i>
+          <span class="name">WLED Controller</span>
+          <span class="ip">10.0.0.35</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Modul 4 -->
+    <div class="glass room-section">
+      <div class="room-title">
+        <i class="fa-solid fa-cubes"></i> Modul 4
+      </div>
+      <div class="grid">
+        <a href="http://10.0.0.41" class="card">
+          <i class="fa-solid fa-circle-chevron-up icon-shutter-up"></i>
+          <span class="name">Rollladen Rauf</span>
+          <span class="ip">10.0.0.41</span>
+        </a>
+        <a href="http://10.0.0.42" class="card">
+          <i class="fa-solid fa-circle-chevron-down icon-shutter-down"></i>
+          <span class="name">Rollladen Runter</span>
+          <span class="ip">10.0.0.42</span>
+        </a>
+        <a href="http://10.0.0.43" class="card">
+          <i class="fa-solid fa-fan icon-fan"></i>
+          <span class="name">Lüfter</span>
+          <span class="ip">10.0.0.43</span>
+        </a>
+        <a href="http://10.0.0.44" class="card">
+          <i class="fa-solid fa-lightbulb icon-light"></i>
+          <span class="name">Licht</span>
+          <span class="ip">10.0.0.44</span>
+        </a>
+        <a href="http://10.0.0.45" class="card">
+          <i class="fa-solid fa-wand-magic-sparkles icon-wled"></i>
+          <span class="name">WLED Controller</span>
+          <span class="ip">10.0.0.45</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Modul 5 -->
+    <div class="glass room-section">
+      <div class="room-title">
+        <i class="fa-solid fa-cubes"></i> Modul 5
+      </div>
+      <div class="grid">
+        <a href="http://10.0.0.51" class="card">
+          <i class="fa-solid fa-circle-chevron-up icon-shutter-up"></i>
+          <span class="name">Rollladen Rauf</span>
+          <span class="ip">10.0.0.51</span>
+        </a>
+        <a href="http://10.0.0.52" class="card">
+          <i class="fa-solid fa-circle-chevron-down icon-shutter-down"></i>
+          <span class="name">Rollladen Runter</span>
+          <span class="ip">10.0.0.52</span>
+        </a>
+        <a href="http://10.0.0.53" class="card">
+          <i class="fa-solid fa-fan icon-fan"></i>
+          <span class="name">Lüfter</span>
+          <span class="ip">10.0.0.53</span>
+        </a>
+        <a href="http://10.0.0.54" class="card">
+          <i class="fa-solid fa-lightbulb icon-light"></i>
+          <span class="name">Licht</span>
+          <span class="ip">10.0.0.54</span>
+        </a>
+        <a href="http://10.0.0.55" class="card">
+          <i class="fa-solid fa-wand-magic-sparkles icon-wled"></i>
+          <span class="name">WLED Controller</span>
+          <span class="ip">10.0.0.55</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

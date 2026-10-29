@@ -1,0 +1,21 @@
+[Unit]
+Description=Oe3 Multi-Client WAV Audio Proxy (Node.js)
+After=network-online.target network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/proxys/radio-proxy
+ExecStart=/usr/bin/node /var/www/proxys/radio-proxy/server.js
+Restart=always
+RestartSec=5
+
+User=proxyserver
+Group=proxyserver
+
+Environment=NODE_ENV=production
+Environment=PORT=8080
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

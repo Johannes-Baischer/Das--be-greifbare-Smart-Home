@@ -147,701 +147,6 @@ ___
 > [!example]- WLED UI
 > ![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/03 Software Setup +WLED UI.png]]
 
-
-## WLED API Proxy
-
-### WLED Proxy Server – Dokumentation
-
-#### Ziel des Projekts
-
-Im Unterricht sollen mehrere ESP32-Stationen WLED-Controller ansteuern können, ohne direkt mit den WLED-Geräten kommunizieren zu müssen.
-
-Dazu wird ein zentraler Proxy-Server eingesetzt, der:
-
-- HTTP-Anfragen der ESP32 entgegennimmt
-    
-- die Ziel-IP-Adresse aus der URL ausliest
-    
-- den eigentlichen WLED-Befehl an den entsprechenden Controller weiterleitet
-    
-- den ESP32 sofort eine Antwort liefert, damit deren Netzwerk-Sockets nicht blockieren
-    
-
----
-
-### Architektur
-
-```text
-ESP32
-  │
-  │ HTTP Request
-  ▼
-WLED Proxy Server
-(Node.js + Express)
-  │
-  │ Weiterleitung
-  ▼
-WLED Controller
-```
-
-Beispiel:
-
-```text
-ESP32
-  │
-  └──► http://10.0.0.1:3000/10.0.0.15/win&T=2
-                     │
-                     ▼
-             Proxy extrahiert:
-             IP = 10.0.0.15
-             Befehl = win&T=2
-                     │
-                     ▼
-             http://10.0.0.15/win&T=2
-```
-
----
-
-### Verzeichnisstruktur
-
-```text
-/var/www/wled-proxy/
-│
-├── server.js
-├── package.json
-└── node_modules/
-```
-
----
-
-### Installation
-
-#### Projekt anlegen
-
-```bash
-mkdir -p /var/www/wled-proxy
-cd /var/www/wled-proxy
-```
-
-#### Node.js prüfen
-
-```bash
-node -v
-npm -v
-```
-
-#### Paket initialisieren
-
-```bash
-npm init -y
-```
-
-#### Express installieren
-
-```bash
-npm install express
-```
-
----
-
-### Der Proxy-Server
-
-Datei:
-
-```text
-/var/www/wled-proxy/server.js
-```
-
-Der Server lauscht dauerhaft auf Port:
-
-```text
-3000
-```
-
----
-
-### Routing-Konzept
-
-Die Route wird über einen regulären Ausdruck definiert:
-
-```javascript
-app.all(/^\/(\d{1,3}(?:\.\d{1,3}){3})\/(.+)$/, (req, res) => {
-```
-
----
-
-### Erklärung der RegEx
-
-```regex
-^\/(\d{1,3}(?:\.\d{1,3}){3})\/(.+)$
-```
-
-#### Bestandteile
-
-##### Start der URL
-
-```regex
-^
-```
-
-Beginn des Pfades.
-
----
-
-##### Erster Slash
-
-```regex
-\/
-```
-
-Trennt den Start der URL von der IP-Adresse.
-
----
-
-##### IPv4-Adresse
-
-```regex
-(\d{1,3}(?:\.\d{1,3}){3})
-```
-
-Erfasst:
-
-```text
-10.0.0.15
-192.168.1.10
-172.16.1.200
-```
-
-Wird in:
-
-```javascript
-req.params[0]
-```
-
-gespeichert.
-
----
-
-##### Zweiter Slash
-
-```regex
-\/
-```
-
-Trennt die IP-Adresse vom WLED-Befehl.
-
----
-
-##### WLED-Befehl
-
-```regex
-(.+)
-```
-
-Erfasst alles hinter der IP-Adresse.
-
-Beispiele:
-
-```text
-win&T=2
-json/state
-json/state/on
-```
-
-Wird in:
-
-```javascript
-req.params[1]
-```
-
-gespeichert.
-
----
-
-##### Ende der URL
-
-```regex
-$
-```
-
-Ende des Pfades.
-
----
-
-### Beispiele
-
-#### Beispiel 1
-
-Request:
-
-```text
-http://10.0.0.1:3000/10.0.0.15/win&T=2
-```
-
-Extraktion:
-
-```text
-IP-Adresse: 10.0.0.15
-Befehl: win&T=2
-```
-
-Weiterleitung:
-
-```text
-http://10.0.0.15/win&T=2
-```
-
----
-
-#### Beispiel 2
-
-Request:
-
-```text
-http://10.0.0.1:3000/10.0.0.15/json/state
-```
-
-Extraktion:
-
-```text
-IP-Adresse: 10.0.0.15
-Befehl: json/state
-```
-
-Weiterleitung:
-
-```text
-http://10.0.0.15/json/state
-```
-
----
-
-### Sofortige Antwort an den ESP32
-
-Der kritischste Teil:
-
-```javascript
-res.set('Connection', 'close');
-res.status(200).send('OK');
-```
-
----
-
-#### Warum?
-
-ESP32-Geräte besitzen nur begrenzte Netzwerkressourcen.
-
-Würde der Proxy auf die Antwort des WLED-Controllers warten, könnte:
-
-- der Socket blockieren
-    
-- der ESP32 in ein Timeout laufen
-    
-- die Anwendung instabil werden
-    
-
-Deshalb erhält der ESP32 unmittelbar:
-
-```http
-HTTP/1.1 200 OK
-Connection: close
-```
-
-Der Socket wird sofort freigegeben.
-
----
-
-### Asynchrone Weiterleitung
-
-Nach der Antwort arbeitet der Proxy weiter:
-
-```javascript
-setImmediate(async () => {
-    ...
-});
-```
-
-Dadurch:
-
-1. Antwort an ESP32
-    
-2. Socket schließen
-    
-3. Erst danach Kommunikation mit WLED
-    
-
----
-
-### Fehlerbehandlung
-
-Jeder WLED-Aufruf wird geschützt:
-
-```javascript
-try {
-   ...
-}
-catch(error) {
-   ...
-}
-```
-
-Beispiele:
-
-- WLED ausgeschaltet
-    
-- Netzwerkfehler
-    
-- Timeout
-    
-- Falsche IP-Adresse
-    
-
-Der Proxy läuft trotzdem weiter.
-
----
-
-### Logging
-
-Für die Unterrichtsdiagnose werden alle Aktionen protokolliert.
-
-Beispiel:
-
-```text
-[2026-06-18T12:15:23.000Z]
-Request von 10.0.0.50
-→ WLED 10.0.0.15
-Befehl: win&T=2
-```
-
-Erfolgreiche Weiterleitung:
-
-```text
-WLED 10.0.0.15 antwortete mit Status 200
-```
-
-Fehler:
-
-```text
-Fehler bei WLED 10.0.0.15:
-fetch failed
-```
-
----
-
-### systemd-Dienst
-
-Datei:
-
-```text
-/etc/systemd/system/wled-proxy.service
-```
-
-Aufgaben:
-
-- automatischer Start beim Booten
-    
-- automatischer Neustart nach Fehlern
-    
-- Integration in journalctl
-    
-
----
-
-### Dienst aktivieren
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable wled-proxy
-sudo systemctl start wled-proxy
-```
-
----
-
-### Dienststatus prüfen
-
-```bash
-systemctl status wled-proxy
-```
-
----
-
-### Logs anzeigen
-
-Live-Monitoring:
-
-```bash
-journalctl -u wled-proxy -f
-```
-
-Historische Logs:
-
-```bash
-journalctl -u wled-proxy
-```
-
-### Port in Firewall freigeben
-
-```bash
-sudo ufw allow 3000
-```
-
----
-
-### Vorteile des Setups
-
-#### Für den Unterricht
-
-- nur ein zentraler Endpunkt
-    
-- einfache Fehlersuche
-    
-- zentrale Protokollierung
-    
-- keine direkte WLED-Kommunikation vom ESP32
-    
-
-#### Für die ESP32
-
-- schnelle Antwortzeiten
-    
-- keine blockierten Sockets
-    
-- geringere Speicherbelastung
-    
-- höhere Stabilität
-    
-
-#### Für den Server
-
-- automatische Wiederherstellung nach Fehlern
-    
-- zentrale Verwaltung über systemd
-    
-- wartungsfreundlich
-    
-- skalierbar auf weitere Stationen
-    
-
----
-
-### Zusammenfassung
-
-Der WLED-Proxy dient als Vermittler zwischen ESP32-Stationen und mehreren WLED-Controllern.
-
-Die Kernidee lautet:
-
-1. Request vom ESP32 empfangen.
-    
-2. Sofort `200 OK` zurückgeben.
-    
-3. Socket schließen.
-    
-4. Ziel-IP und Befehl aus der URL extrahieren.
-    
-5. Befehl asynchron an den WLED-Controller senden.
-    
-6. Alle Aktionen protokollieren.
-    
-
-Dadurch entsteht ein robuster und unterrichtstauglicher Aufbau mit zentralem Monitoring und hoher Stabilität auch bei mehreren gleichzeitig arbeitenden Stationen.
-
-
-```js
-// /var/www/wled-proxy/server.js
-
-  
-
-const express = require('express');
-
-  
-
-const app = express();
-
-const PORT = 3000;
-
-  
-
-// Optional: JSON-Body-Unterstützung
-
-app.use(express.json());
-
-  
-
-// Beispielaufruf:
-
-// http://10.0.0.1:3000/10.0.0.15/win&T=2
-
-// http://10.0.0.1:3000/10.0.0.15/json/state
-
-// http://10.0.0.1:3000/10.0.0.15/json/state/on
-
-  
-
-// Regex Erklärung:
-
-// ^\/(\d{1,3}(?:\.\d{1,3}){3})\/(.+)$
-
-// ^ - Start der URL
-
-// \/ - Ein Slash
-
-// (\d{1,3}(?:\.\d{1,3}){3}) - Eine IP-Adresse (z.B. 192.168.1.1)
-
-// \/ - Ein weiterer Slash
-
-// (.+) - Der Rest der URL (z.B. win&T=2 oder json/state)
-
-// $ - Ende der URL
-
-  
-
-app.all(/^\/(\d{1,3}(?:\.\d{1,3}){3})\/(.+)$/, (req, res) => {
-
-    const targetIp = req.params[0];
-
-    const wledCommand = req.params[1];
-
-  
-
-    const timestamp = new Date().toISOString();
-
-  
-
-    console.log(
-
-        `[${timestamp}] Request von ${req.ip} -> WLED ${targetIp} | Befehl: ${wledCommand}`
-
-    );
-
-  
-
-    // Sofortige Antwort an den ESP32
-
-    res.set('Connection', 'close');
-
-    res.status(200).send('OK');
-
-  
-
-    // Danach asynchron weiterarbeiten
-
-    setImmediate(async () => {
-
-        try {
-
-            const targetUrl = `http://${targetIp}/${wledCommand}`;
-
-  
-
-            console.log(
-
-                `[${timestamp}] Weiterleitung an WLED: ${targetUrl}`
-
-            );
-
-  
-
-            const controller = new AbortController();
-
-            const timeout = setTimeout(() => {
-
-                controller.abort();
-
-            }, 5000);
-
-  
-
-            const response = await fetch(targetUrl, {
-
-                method: 'GET',
-
-                signal: controller.signal
-
-            });
-
-  
-
-            clearTimeout(timeout);
-
-  
-
-            console.log(
-
-                `[${timestamp}] WLED ${targetIp} antwortete mit Status ${response.status}`
-
-            );
-
-        } catch (error) {
-
-            console.error(
-
-                `[${timestamp}] Fehler bei WLED ${targetIp}:`,
-
-                error.message
-
-            );
-
-        }
-
-    });
-
-});
-
-  
-
-// Fallback für ungültige URLs
-
-app.use((req, res) => {
-
-    console.log(
-
-        `[${new Date().toISOString()}] Ungültiger Request: ${req.originalUrl}`
-
-    );
-
-  
-
-    res.set('Connection', 'close');
-
-    res.status(200).send('OK');
-
-});
-
-  
-
-app.listen(PORT, '0.0.0.0', () => {
-
-    console.log('======================================');
-
-    console.log(`WLED Proxy gestartet`);
-
-    console.log(`Port: ${PORT}`);
-
-    console.log(`Zeit: ${new Date().toISOString()}`);
-
-    console.log('======================================');
-
-});
-
-  
-
-// Zusätzliche Sicherheit gegen Abstürze
-
-process.on('unhandledRejection', (reason) => {
-
-    console.error('Unhandled Rejection:', reason);
-
-});
-
-  
-
-process.on('uncaughtException', (error) => {
-
-    console.error('Uncaught Exception:', error);
-
-});
-```
-
 # TP-Link Tapo C200
 
 1. Android App zur Ersteinrichtung installieren
@@ -1546,3 +851,158 @@ views:
 >![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/03 Software Setup +HA WLED Integration.png]]
 >![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/03 Software Setup +HA Dashboard mit Favoriten und Bereichen.png]]
 >![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/03 Software Setup +HA Custom Dashboard.png]]
+
+## Proxy Server Kommunikation
+
+Wir setzen für das Umgehen der einfachen ESP32 Netzwerkfähigkeiten (nur GET-Requests mit ESPIDE) einige Proxys (Stellvertreter) ein, die die Kommunikation zwischen den ESP32 und den WLED-Controllern übernehmen und dadurch komplexere Abläufe und Befehle ermöglichen.
+
+### Vorbereitung
+
+**proxyserver** Benutzer erstellen:
+```bash
+sudo useradd -r -s /bin/usr/false proxyserver
+```
+
+"/proxys" Verzeichnis in "/var/www" erstellen:
+```bash
+sudo mkdir -p /var/www/proxys
+```
+```bash
+sudo chown proxyserver:proxyserver /var/www/proxys
+```
+
+### Ö3 Radio Proxy
+> Stellt einen WAV-Stream von Ö3 für die ESP32 bereit, da diese nur WAV-Streams abspielen können.
+
+
+```bash
+/var/www/proxys/radio-proxy/radio-proxy.service
+```
+
+
+### WLED & Sensor Proxy Server
+> Stellt sicher, dass alle GET Anfragen von den ESP32 direkt vom Proxy Server sauber beantwortet werden, und somit direkt weiterarbeiten können, ohne zu riskieren, dass ihre Ressourcen überlastet werden (durch Warten, bearbeiten von Fehlercodes, etc.)
+
+```bash
+/var/www/proxys/radio-proxy/radio-proxy.service
+```
+
+**2 Teile:**
+
+1. WLED Befehle direkt weiterleiten
+	- http://10.0.0.1:3000/api/wled/modul1/win&A=255 ruft stellvertretend 10.0.0.15/win&A=255 
+	- const wledDevices = {
+    "modul1": "10.0.0.15",
+    "modul2": "10.0.0.25",
+    "modul3": "10.0.0.35",
+    "modul4": "10.0.0.45",
+    "modul5": "10.0.0.55"};
+
+2. Sensor Schnittstellen mit GET
+	- /api/sensor/update?temperatur=22.5&luftfeuchtigkeit=45
+		- Aktualisiert die aktuellen Werte, die vom Server an die Controller gemeldet werden
+	- /api/sensor/temperatur
+		 - Liefert die aktuelle Temperatur als JSON zurück
+		 - let sensorData = {
+    temperatur: "0",
+    luftfeuchtigkeit: "0",
+    lichtstaerke: "0",
+    entfernung: "0",
+    ir: "kein_signal"};
+
+> *Besonderer Hinweis:* Die Werte müssen nicht von "echten" Sensoren stammen. Sie können auch durch die Lehrperson direkt per GET Request gesetzt werden (z.B. durch aufrufen der URL im Browser). Somit können die ESP32 auch mit simulierten Sensorwerten arbeiten, die von der Lehrperson direkt gesetzt werden.)
+
+## Steuerungs Dashboard
+
+```bash
+/var/www/dashboard
+```
+
+- index.html (Übersicht über alle Geräte IPs)
+	- Erreichbar über 10.0.0.1
+- sensor-simulation.html (Arbeitet mit Sensor API und kann die Werte direkt setzen)
+	- Erreichbar über 10.0.0.1/sensor-simulation
+
+![[Studium/Master Lehramt/2-tes Semester/Masterarbeit/Notizen/_attachments/03 Software Setup +Sensor-Simulation.png]]
+
+
+## Node.js Dashboard & systemd Service Einrichtung
+
+### 1. Server-Skript erstellen (`server.js`)
+Erstelle eine Datei namens `server.js` im Verzeichnis `/var/www/dashboard`[cite: 1]:
+
+```javascript
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = 80;
+const PUBLIC_DIR = '/var/www/dashboard';
+
+const server = http.createServer((req, res) => {
+    let filePath = '';
+    if (req.url === '/' || req.url === '/index.html') {
+        filePath = path.join(PUBLIC_DIR, 'index.html');
+    } else if (req.url === '/sensor-simulation') {
+        filePath = path.join(PUBLIC_DIR, 'sensor-simulator.html');
+    } else {
+        filePath = path.join(PUBLIC_DIR, req.url);
+    }
+
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('404 - Nicht gefunden');
+        } else {
+            let ext = path.extname(filePath);
+            let contentType = 'text/html';
+            if (ext === '.css') contentType = 'text/css';
+            if (ext === '.js') contentType = 'application/javascript';
+
+            res.writeHead(200, { 'Content-Type': \`\${contentType}; charset=utf-8\` });
+            res.end(content, 'utf-8');
+        }
+    });
+});
+
+server.listen(PORT, () => console.log(\`Server läuft auf Port \${PORT}\`));
+```
+
+### 2. Berechtigung für Port 80 vergeben
+Damit Node.js ohne Root-Rechte auf Port 80 lauschen darf:
+
+```bash
+sudo setcap 'cap_net_bind_service=+ep' $(which node)
+sudo ufw allow 80/tcp
+```
+
+### 3. systemd-Service einrichten
+Erstelle die Dienst-Datei unter `/etc/systemd/system/dashboard.service`:
+
+```ini
+[Unit]
+Description=Node.js Dashboard Server
+After=network.target
+
+[Service]
+User=proxyserver
+WorkingDirectory=/var/www/dashboard
+ExecStart=/usr/bin/node server.js
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 4. Service aktivieren & starten
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable dashboard
+sudo systemctl start dashboard
+```
+
+
+> **URLs:**
+> * `http://10.0.0.1` -> `index.html`
+> * `http://10.0.0.1/sensor-simulation` -> `sensor-simulator.html`
